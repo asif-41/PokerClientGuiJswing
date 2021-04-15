@@ -60,6 +60,10 @@ public class ClientToServer extends JFrame {
     //      FOR PRIVATE GAME THREADS
     private int gameThreadId;                               //      GAME ID
     private int gameThreadCode;                             //      GAME CODE
+    private String gameRoomType;                            //      room type
+    private int roomEntryValue;                             //      Entry fee of game room
+    private boolean gameRunning;                            //      GAME RUNNING OR NOT
+
     private String call;                                    //      CALL OF PLAYER IN CURRENT ROUND
     private int minCallValue;                               //      MINIMUM VALUE TO CALL IN CURRENT ROUND
     private int foldCost;                                   //      FOLD COST, FOR SMALL BLIND, BIG BLINDS
@@ -142,6 +146,10 @@ public class ClientToServer extends JFrame {
         user = null;
         jsonIncoming = null;
         gameThreadId = -1;
+        gameThreadCode = -1;
+        roomEntryValue = 0;
+        gameRoomType = "";
+        gameRunning = false;
 
         webSocketLink = link;
         webSocketClient = null;
@@ -327,6 +335,7 @@ public class ClientToServer extends JFrame {
             //requesting to buy coins
 
             receiveBuyCoinResponse(jsonIncoming);
+            gameStartIfInAGame();
         } else if (jsonIncoming.get("requestType").equals("FriendsList")) {
 
             //requesting friends list
@@ -390,19 +399,28 @@ public class ClientToServer extends JFrame {
                 showEndCycle(jsonIncoming.getString("data"));
             } else if (tempJson.get("gameRequest").equals("WelcomeMessage")) {
 
+                initiateGameRoom(tempJson);
                 showWelcomeMessage(tempJson);
+                exitButton.setEnabled(true);
             } else if (tempJson.get("gameRequest").equals("Result")) {
 
                 processResult(jsonIncoming.getJSONObject("data"));
             } else if (tempJson.get("gameRequest").equals("AllCards")) {
 
                 showAllCards(jsonIncoming.getJSONObject("data"));
-            } else if (tempJson.get("gameRequest").equals("WaitForPlayers")) {
+            } else if (tempJson.get("gameRequest").equals("WaitForPlayersToBuy")) {
 
-                waitForPlayers();
+                waitForPlayersToBuy();
             } else if (tempJson.get("gameRequest").equals("NextTurnInfo")) {
 
                 showNextTurnInfo(jsonIncoming.getJSONObject("data"));
+            } else if (tempJson.get("gameRequest").equals("LeaveGame")) {
+
+                leaveGameRoom();
+                disableGameButtons();
+                exitButton.setEnabled(false);
+                joinGame.setText("Join");
+                addTextInGui("Leaving game");
             }
         }
 
@@ -748,6 +766,10 @@ public class ClientToServer extends JFrame {
         addTextInGui(user.toString());
     }
 
+    private void clickedExitButton() {
+
+        requestExit();
+    }
 
     //=====================================================================================
     //      REQUESTS FRIENDLIST TO SERVER
@@ -810,6 +832,7 @@ public class ClientToServer extends JFrame {
 
         try {
             this.dispose();
+            webSocketClient.close();
         } catch (Exception e) {
             addTextInGui("Error in closing connection in Client side, error -> " + e);
         }
@@ -818,7 +841,7 @@ public class ClientToServer extends JFrame {
     private void closeButtonClicked() {
         String ret = "";
         ret = "Close";
-        requestClose();
+        closeEverything();
     }
 
     //=======================================================================================
@@ -847,6 +870,8 @@ public class ClientToServer extends JFrame {
         raiseButton.addActionListener(e -> clickedRaiseButton());
         checkButton.addActionListener(e -> clickedCheckButton());
         allInButton.addActionListener(e -> clickedAllInButton());
+        exitButton.addActionListener(e -> clickedExitButton());
+
 
         textField.addKeyListener(new KeyListener() {
             @Override
@@ -1131,25 +1156,6 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
-    private void requestClose() {
-
-        /*
-        JSONObject send = new JSONObject();
-
-        send.put("sender", "Client");
-        send.put("ip", socket.getLocalAddress().getHostAddress());
-        send.put("port", socket.getPort());
-
-        if(user != null) send.put("username", user.getUsername());
-        else send.put("username", "");
-
-        send.put("requestType", "closeRequest");
-
-        sendMessage(send.toString());
-        */
-    }
-
-
     //=====================================================================================
     //
     //              JSON CODES
@@ -1163,6 +1169,49 @@ public class ClientToServer extends JFrame {
     //
     //
     //=======================================================================================
+
+    private void initiateGameRoom(JSONObject temp) {
+
+        gameRunning = true;
+        gameThreadId = temp.getInt("id");
+        gameThreadCode = temp.getInt("code");
+        gameRoomType = temp.getString("roomType");
+        roomEntryValue = temp.getInt("entryCoinAmount");
+        user.setSeatPosition(temp.getInt("seatPosition"));
+    }
+
+    private void leaveGameRoom() {
+
+        gameThreadId = -1;
+        gameThreadCode = -1;
+        roomEntryValue = 0;
+        gameRoomType = "";
+        gameRunning = false;
+        user.setSeatPosition(-1);
+    }
+
+    private void gameStartIfInAGame() {
+
+        //KONO GAME E NAI
+        if (gameThreadId == -1) return;
+
+        if (gameRunning == true) return;
+
+        sendTryStartCurrentGameRequest();
+    }
+
+    private void requestExit() {
+
+        sendExitRequest();
+        leaveGameRoom();
+        disableGameButtons();
+        exitButton.setEnabled(false);
+        joinGame.setText("Join");
+        addTextInGui("Leaving game");
+    }
+
+
+
 
     private void loadRoomData(JSONArray data) {
 
@@ -1226,11 +1275,9 @@ public class ClientToServer extends JFrame {
 
         String show;
 
-        gameThreadId = jsonObject.getInt("id");
-        gameThreadCode = jsonObject.getInt("code");
-
         show = "Welcome to game room!\n";
-        show += "Game id: " + jsonObject.getInt("id") + " game code: " + jsonObject.getInt("code");
+        show += "Game id: " + gameThreadId + " game code: " + gameThreadCode + " board type: " + gameRoomType + " entry value: " + roomEntryValue;
+        show += "Seat: " + user.getSeatPosition();
 
         addTextInGui(show);
     }
@@ -1263,11 +1310,13 @@ public class ClientToServer extends JFrame {
         addTextInGui(show);
     }
 
-    private void waitForPlayers() {
+    private void waitForPlayersToBuy() {
 
         disableGameButtons();
 
-        String show = "Wait for players to buy coins";
+        gameRunning = false;
+
+        String show = "Wait for players to buy coins -> " + gameRunning;
         addTextInGui(show);
 
     }
@@ -1281,6 +1330,7 @@ public class ClientToServer extends JFrame {
         addTextInGui(show);
 
     }
+
 
 
     //=====================================================================================
@@ -1301,6 +1351,7 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
         tempJson.put("roundCount", roundCount);
         tempJson.put("turnCount", turnCount);
 
@@ -1327,6 +1378,7 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
         tempJson.put("roundCount", roundCount);
         tempJson.put("turnCount", turnCount);
 
@@ -1353,6 +1405,7 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
         tempJson.put("roundCount", roundCount);
         tempJson.put("turnCount", turnCount);
 
@@ -1379,6 +1432,7 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
         tempJson.put("roundCount", roundCount);
         tempJson.put("turnCount", turnCount);
 
@@ -1405,6 +1459,7 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
         tempJson.put("roundCount", roundCount);
         tempJson.put("turnCount", turnCount);
 
@@ -1420,5 +1475,42 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
+    private void sendTryStartCurrentGameRequest() {
 
+        JSONObject send = initiateRequest();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "StartNewRound");
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+
+    }
+
+    private void sendExitRequest() {
+
+        JSONObject send = initiateRequest();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "ExitGame");
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+
+
+    }
 }
