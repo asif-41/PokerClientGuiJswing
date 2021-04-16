@@ -449,7 +449,7 @@ public class ClientToServer extends JFrame {
                 acceptWaitingRoomInvitation();
             } else if (tempJson.getString("requestType").equals("JoinWaitingRoomResponse")) {
 
-                showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("roomCode"));
+                showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("roomCode"), tempJson.getString("message"));
             } else if (tempJson.getString("requestType").equals("RemoveFromWaitingRoomResponse")) {
 
                 String message = tempJson.getString("message");
@@ -842,6 +842,9 @@ public class ClientToServer extends JFrame {
 
         temp.add("b");
         temp.add("c");
+        temp.add("d");
+        temp.add("e");
+        temp.add("f");
 
         createWaitingRoom(temp, "board1", 100000, 100000);
     }
@@ -979,12 +982,12 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
-    private void showWaitingRoomJoinResponse(boolean succes, int code) {
+    private void showWaitingRoomJoinResponse(boolean succes, int code, String msg) {
 
         String show;
 
-        if (succes) show = "Joining waiting room with code " + code;
-        else show = "Invalid join request to waiting room " + code;
+        show = msg + "\n";
+        show += "Room code " + code;
 
         addTextInGui(show);
     }
