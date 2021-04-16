@@ -13,7 +13,7 @@ public class Main {
 
             URI uri = new URI(link);
 
-            for (int i = 0; i < 3; i++) {
+            for (int i = 0; i < 8; i++) {
                 ClientToServer c = new ClientToServer(uri, 8080);
 
 

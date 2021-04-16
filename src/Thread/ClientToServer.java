@@ -801,6 +801,9 @@ public class ClientToServer extends JFrame {
         }
     }
 
+    private void inviteButtonClick() {
+
+    }
 
     //======================================================================================
     //
@@ -862,6 +865,7 @@ public class ClientToServer extends JFrame {
         friendsButton.addActionListener(e -> friendListRequest());
         joinGame.addActionListener(e -> joinClick());
         buyButton.addActionListener(e -> buyCoinClick());
+        inviteButton.addActionListener(e -> inviteButtonClick());
         clearButton.addActionListener(e -> textArea.setText(""));
         closeButton.addActionListener(e -> closeButtonClicked());
 
@@ -1058,6 +1062,23 @@ public class ClientToServer extends JFrame {
         addTextInGui(jsonIncoming.getString("responseMsg"));
     }
 
+    private void updateGameDataOnJoinRequest(boolean isJoin) {
+
+        if (isJoin) {
+            user.setRoomCode(-1);
+            user.setRoomId(-1);
+            user.setBoardType("board1");
+            user.setBoardCoin(0);
+        } else {
+            user.setRoomCode(-1);
+            user.setRoomId(-1);
+            user.setBoardType("");
+            user.setBoardCoin(-1);
+        }
+    }
+
+
+
 
     private void requestLogin(String data) {
 
@@ -1140,6 +1161,8 @@ public class ClientToServer extends JFrame {
 
     private void joinRequest(boolean isJoin) {
 
+        updateGameDataOnJoinRequest(isJoin);
+
         JSONObject send = initiateRequest();
 
         send.put("username", user.getUsername());
@@ -1149,7 +1172,10 @@ public class ClientToServer extends JFrame {
         JSONObject tempJson = new JSONObject();
 
         tempJson.put("requestIn", isJoin);
-        tempJson.put("roomCode", -1);
+        tempJson.put("roomId", user.getRoomId());
+        tempJson.put("roomCode", user.getRoomCode());
+        tempJson.put("boardType", user.getBoardType());
+        tempJson.put("entryAmount", user.getBoardCoin());
 
         send.put("data", tempJson);
 
