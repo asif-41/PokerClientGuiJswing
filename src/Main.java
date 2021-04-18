@@ -14,7 +14,7 @@ public class Main {
             URI uri = new URI(link);
 
             for (int i = 0; i < 8; i++) {
-                ClientToServer c = new ClientToServer(uri, 8080);
+                ClientToServer c = new ClientToServer(uri, 8080, 60, 1000, 1000);
 
 
             }

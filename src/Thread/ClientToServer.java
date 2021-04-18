@@ -1,5 +1,6 @@
 package Thread;
 
+
 import Objects.Card;
 import Objects.User;
 import org.json.JSONArray;
@@ -14,9 +15,8 @@ import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
 import java.net.InetAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.Timer;
-import java.util.TimerTask;
+import java.util.*;
 
 public class ClientToServer extends JFrame {
 
@@ -38,6 +38,13 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================
 
+    public static int boardTypeCount = 5;
+    public static long minCallValue[] = {10000, 10000, 10000, 10000, 10000};
+    public static String boardType[] = {"board1", "board2", "board3", "board4", "board5"};
+    public static long minEntryValue[] = {100000, 100000, 100000, 100000, 100000};
+
+
+
     URI webSocketLink;                                      //      SOCKET LINK
     WebSocketClient webSocketClient;                        //      SOCKET
     private int port;                                       //      CONNECTION PORT
@@ -45,19 +52,26 @@ public class ClientToServer extends JFrame {
     //      UNNECESSARY
     //      USED FOR LOFFING IN
     private User user;                                      //      USER OBJECT IN CLIENT SIDE
-    private int inpCount = 0;                               //      INPUT COUNT
-    //      USED THIS TO COMMUNICATE WITH SERVER
-    //      IGNORE AND USE JSON OBJECT
+
+    private JSONObject jsonIncoming;                        //      INCOMING JSON DATA
+    private boolean hasConnected;                           //      IF CONNECTION IS MADE
+    private Timer connectionCheckTimer;                     //      TIMER TO CHECK IF HAS CONNECTED
 
 
-    //======================================================================================
-    //
-    //                  IN GAME DATA
-    //
-    //======================================================================================
+    private int tryConnectionTimeCounter;                   //      SECONDS COUNTER
+    private int connectionTimeOut;                          //      WEB SOCKET CONNECTION TIMEOUT
+    private int reconnectionTimeOut;                        //      WEB SOCKET RECONNECTION TIMEOUT
+
+
     private String curCommand;                              //      CURRENT USER COMMANDS IN GUI
     private String msg = "";                                //      MSG STRING
+
+
+    //========================================================================================
+    //          DELETE THIS VARIABLES AT THE END
+
     //      FOR PRIVATE GAME THREADS
+
     private int gameThreadId;                               //      GAME ID
     private int gameThreadCode;                             //      GAME CODE
     private String gameRoomType;                            //      room type
@@ -71,27 +85,12 @@ public class ClientToServer extends JFrame {
     private int tempMinCallValue;
 
     private String call;                                    //      CALL OF PLAYER IN CURRENT ROUND
-    private int minCallValue;                               //      MINIMUM VALUE TO CALL IN CURRENT ROUND
+    //private int minCallValue;                               //      MINIMUM VALUE TO CALL IN CURRENT ROUND
     private int foldCost;                                   //      FOLD COST, FOR SMALL BLIND, BIG BLINDS
     private int boardCoin;                                  //      CURRENT COIN IN BOARD
     private int cycleCount;                                 //      CYCLE COUNT
     private int roundCount;                                 //      ROUND COUNTS IN CURRENT GAME THREAD
-
-    //===============================================================================
-    //
-    //      NEW VARIABLES
-    //
-    //===============================================================================
-    //      TO SHOW ANIMATION AT START OF THE ROUND
-    private int turnCount;                                  //      TURN COUNT IN CURRENT ROUND
-    //      EXAMPLE:    PLAYER A, PLAYER B
-    //                  ROUND START
-    //                  A CALLED, THEN B ER TURN
-    //                  NOW TURNCOUNT = 2;
-    private JSONObject jsonIncoming;
-    private boolean hasConnected;                           //      IF CONNECTION IS MADE
-    private int timeCounter;                            //      SECONDS COUNTER
-    private Timer connectionCheckTimer;                     //      TIMER TO CHECK IF HAS CONNECTED
+    private int turnCount;
 
     //============================================================================
     //              INITIALIZING DONE
@@ -104,6 +103,11 @@ public class ClientToServer extends JFrame {
     //              IGNORE AND DELETE THIS
     //
     //======================================================================================================
+
+
+    private int inpCount = 0;                               //      INPUT COUNT
+    //      USED THIS TO COMMUNICATE WITH SERVER
+    //      IGNORE AND USE JSON OBJECT
 
     private JPanel gameButtons;
     private JButton foldButton;
@@ -142,24 +146,11 @@ public class ClientToServer extends JFrame {
     //============================================================================
 
 
-    public ClientToServer(URI link, int port) {
+    public ClientToServer(URI link, int port, int tryConnectionTimeCounter, int connectionTimeOut, int reconnectionTimeOut) {
 
 
         setUpGui();
         guiFunctions();
-
-        user = null;
-        jsonIncoming = null;
-        gameThreadId = -1;
-        gameThreadCode = -1;
-        roomEntryValue = 0;
-        gameRoomType = "";
-        gameRunning = false;
-
-        tempCode = -1;
-        tempBoard = "";
-        tempEntryValue = 0;
-        tempMinCallValue = 0;
 
         webSocketLink = link;
         webSocketClient = null;
@@ -172,9 +163,50 @@ public class ClientToServer extends JFrame {
             addTextInGui("Exception in fetching ip -> " + e);
         }
 
+        user = null;
+        jsonIncoming = null;
+
+        this.tryConnectionTimeCounter = tryConnectionTimeCounter;
+        this.connectionTimeOut = connectionTimeOut;
+        this.reconnectionTimeOut = reconnectionTimeOut;
+        hasConnected = false;
+
+        curCommand = "";
+        msg = "";
+
+
+        //  DELETE
+
+        gameThreadId = -1;
+        gameThreadCode = -1;
+        roomEntryValue = 0;
+        gameRoomType = "";
+        gameRunning = false;
+
+        tempCode = -1;
+        tempBoard = "";
+        tempEntryValue = 0;
+        tempMinCallValue = 0;
+
+        //  DELETE
+
+
+
+
         createWebSocketClient();
         tryConnection();
     }
+
+    //=====================================================================================
+    //
+    //=====================================================================================
+
+
+    //======================================================================
+    //
+    //      SETTING UP CONNECTION
+    //
+    //======================================================================
 
     private void createWebSocketClient() {
 
@@ -217,24 +249,14 @@ public class ClientToServer extends JFrame {
 
             }
         };
-        webSocketClient.setConnectTimeout(1000);
-        webSocketClient.enableAutomaticReconnection(1000);
+        webSocketClient.setConnectTimeout(connectionTimeOut);
+        webSocketClient.enableAutomaticReconnection(reconnectionTimeOut);
 
     }
 
-
-    //======================================================================
-    //
-    //      CONNECTION TIMER
-    //
-    //======================================================================
-
     private void tryConnection() {
 
-        timeCounter = 60;
-        hasConnected = false;
         connectionCheckTimer = new Timer();
-
         webSocketClient.connect();
 
         connectionCheckTimer.scheduleAtFixedRate(new TimerTask() {
@@ -249,14 +271,16 @@ public class ClientToServer extends JFrame {
     private void connectionChecker() {
 
         if (hasConnected) {
-            timeCounter = -1;
+            tryConnectionTimeCounter = -1;
             connectionCheckTimer.cancel();
 
             addTextInGui("Connection established with server");
-        } else timeCounter--;
 
-        if (timeCounter == 0) {
-            timeCounter = -1;
+        } else tryConnectionTimeCounter--;
+
+        if (tryConnectionTimeCounter == 0) {
+
+            tryConnectionTimeCounter = -1;
             connectionCheckTimer.cancel();
             webSocketClient.close();
 
@@ -267,7 +291,6 @@ public class ClientToServer extends JFrame {
 
     //=====================================================================================
     //
-    //
     //=====================================================================================
 
 
@@ -277,12 +300,22 @@ public class ClientToServer extends JFrame {
     //
     //======================================================================
 
+    private JSONObject initiateJson() {
+
+        JSONObject temp = new JSONObject();
+
+        temp.put("sender", "Client");
+        temp.put("ip", host);
+        temp.put("port", port);
+
+        return temp;
+    }
+
     private void sendMessage(String temp) {
         try {
 
             System.out.println("Sending -> " + temp);
             webSocketClient.send(temp);
-
 
         } catch (Exception e) {
             addTextInGui("Error in sending msg to server -> " + e);
@@ -303,115 +336,90 @@ public class ClientToServer extends JFrame {
 
         if (jsonIncoming.get("requestType").equals("LoginResponse")) {
 
-
-            if (jsonIncoming.getBoolean("response")) {
-
-                //logged in successfully
-                //editing gui buttons
-
-                logUser.setText("Logout");
-                userInfoButton.setEnabled(true);
-                friendsButton.setEnabled(true);
-                joinGame.setEnabled(true);
-                inviteButton.setEnabled(true);
-                buyButton.setEnabled(true);
-
-                //making new users
-
-                JSONObject tempJSON = jsonIncoming.getJSONObject("data");
-                loadUser(tempJSON);
-                addTextInGui("Welcome " + user.getUsername());
-            } else {
-                addTextInGui("Login failed!");
-            }
+            loginRequestResponse(jsonIncoming.getBoolean("response"), jsonIncoming.getJSONObject("data"));
         } else if (jsonIncoming.get("requestType").equals("LogoutResponse")) {
-            if (jsonIncoming.getBoolean("response")) {
 
-                //logged out successfully
-                //gui options
-
-                logUser.setText("Login");
-                userInfoButton.setEnabled(false);
-                friendsButton.setEnabled(false);
-                joinGame.setEnabled(false);
-                inviteButton.setEnabled(false);
-                buyButton.setEnabled(false);
-
-                addTextInGui("Logged out user " + user.getUsername());
-                logoutUser();
-            } else addTextInGui("Logout request failed");
-        } else if (jsonIncoming.get("requestType").equals("BuyCoin")) {
+            logoutRequestResponse(jsonIncoming.getBoolean("success"));
+        } else if (jsonIncoming.get("requestType").equals("BuyCoinResponse")) {
 
             //requesting to buy coins
 
             receiveBuyCoinResponse(jsonIncoming);
-            gameStartIfInAGame();
+            //gameStartIfInAGame();
+        } else if (jsonIncoming.get("requestType").equals("AddCoinVideoResponse")) {
+
+            //requesting to buy coins
+
+            receiveAddCoinVideoResponse(jsonIncoming);
+            //gameStartIfInAGame();
+        } else if (jsonIncoming.get("requestType").equals("AddFreeCoinResponse")) {
+
+            //requesting to buy coins
+
+            receiveAddFreeCoinResponse(jsonIncoming);
+            //gameStartIfInAGame();
         } else if (jsonIncoming.get("requestType").equals("FriendsList")) {
 
             //requesting friends list
             JSONArray friends = jsonIncoming.getJSONArray("data");
 
             showFriends(friends);
-        } else if (jsonIncoming.get("requestType").equals("Join")) {
+        } else if (jsonIncoming.get("requestType").equals("JoinResponse")) {
 
-            //join in a game request
+            requestJoinResponse(jsonIncoming);
+        } else if (jsonIncoming.get("requestType").equals("AbortResponse")) {
 
-            addTextInGui(jsonIncoming.get("data").toString());
-            joinGame.setText("Abort");
-        } else if (jsonIncoming.get("requestType").equals("Abort")) {
+            requestAbortResponse(jsonIncoming);
+        } else if (jsonIncoming.get("requestType").equals("UpdateOwnResponse")) {
 
-            //abort game join request
+            loadUpdateOwnResponse(jsonIncoming);
+        } else if (jsonIncoming.get("requestType").equals("UpdateOwnInGameResponse")) {
 
-            addTextInGui(jsonIncoming.get("data").toString());
-            joinGame.setText("Join");
+            loadUpdateOwnInGameResponse(jsonIncoming);
         } else if (jsonIncoming.get("requestType").equals("GameRoom")) {
 
             JSONObject tempJson = jsonIncoming.getJSONObject("gameData");
 
-            if (tempJson.get("gameRequest").equals("LoadRoomData")) {
+            if (tempJson.get("gameRequest").equals("InitializeGameData")) {
 
-                loadRoomData(jsonIncoming.getJSONArray("data"));
+                initializeGameData(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("LoadPlayersData")) {
+
+                loadPlayersData(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("LoadGameRoomData")) {
+
+                loadGameRoomData(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
+
+                showWelcomeGameMessage(jsonIncoming);
+                exitButton.setEnabled(true);
             } else if (tempJson.get("gameRequest").equals("RoundStartMessage")) {
 
-                roundInitialize();
-                showRoundStartMessage(jsonIncoming.getString("data"));
-            } else if (tempJson.get("gameRequest").equals("CheckCoinBothEnd")) {
-
-                checkIfCoinMatch(jsonIncoming.getInt("data"));
+                gameRoundStart(jsonIncoming);
             } else if (tempJson.get("gameRequest").equals("LoadPlayerCards")) {
 
-                //cards came from game threads
-                //load cards in user objects
-                //decoded card data from strings
-
-                decodeCards(jsonIncoming.getJSONArray("data"), 1);
+                loadCards(jsonIncoming);
             } else if (tempJson.get("gameRequest").equals("LoadBoardCards")) {
 
-                //cards came from game threads
-                //load cards in user objects
-                //decoded card data from strings
+                loadCards(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("ShowBoardInfo")) {
 
-                decodeCards(jsonIncoming.getJSONArray("data"), 0);
-            } else if (tempJson.get("gameRequest").equals("BoardData")) {
+                showBoardInfo(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("ShowNextTurnInfo")) {
 
-                setBoardInfo(jsonIncoming.getJSONObject("data"));
-            } else if (tempJson.get("gameRequest").equals("EnableGameButtons")) {
-
-                enableGameButtons(jsonIncoming.getJSONArray("data"));
+                showNextTurnInfo(jsonIncoming);
             } else if (tempJson.get("gameRequest").equals("DisableGameButtons")) {
 
                 disableGameButtons();
+            } else if (tempJson.get("gameRequest").equals("EnableGameButtons")) {
+
+                enableGameButtons(jsonIncoming);
             } else if (tempJson.get("gameRequest").equals("TurnInfo")) {
 
                 showTurnInfo(jsonIncoming.getJSONObject("data"));
             } else if (tempJson.get("gameRequest").equals("CycleEnd")) {
 
                 showEndCycle(jsonIncoming.getString("data"));
-            } else if (tempJson.get("gameRequest").equals("WelcomeMessage")) {
-
-                initiateGameRoom(tempJson);
-                showWelcomeMessage(tempJson);
-                exitButton.setEnabled(true);
             } else if (tempJson.get("gameRequest").equals("Result")) {
 
                 processResult(jsonIncoming.getJSONObject("data"));
@@ -421,12 +429,10 @@ public class ClientToServer extends JFrame {
             } else if (tempJson.get("gameRequest").equals("WaitForPlayersToBuy")) {
 
                 waitForPlayersToBuy();
-            } else if (tempJson.get("gameRequest").equals("NextTurnInfo")) {
-
-                showNextTurnInfo(jsonIncoming.getJSONObject("data"));
             } else if (tempJson.get("gameRequest").equals("LeaveGame")) {
 
                 leaveGameRoom();
+
                 disableGameButtons();
                 exitButton.setEnabled(false);
                 joinGame.setText("Join");
@@ -448,7 +454,7 @@ public class ClientToServer extends JFrame {
                 acceptWaitingRoomInvitation();
             } else if (tempJson.getString("requestType").equals("JoinWaitingRoomResponse")) {
 
-                showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("roomCode"), tempJson.getString("message"));
+                showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("gameCode"), tempJson.getString("message"));
             } else if (tempJson.getString("requestType").equals("RemoveFromWaitingRoomResponse")) {
 
                 String message = tempJson.getString("message");
@@ -473,45 +479,493 @@ public class ClientToServer extends JFrame {
 
     //=====================================================================================
     //
+    //=====================================================================================
+
+
+    //=============================================================================
+    //
+    //          LOGIN FUNCTIONS, UPDATE OWN FUNCTION
+    //
+    //          (FB_ID, "facebook"), (GMAIL_ID, "google") ( empty, "guest")
+    //
+    //=============================================================================
+
+    private void requestLogin(String account_data, String account_type, String username) {
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "LoginRequest");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("account_id", account_data);
+        tempJson.put("account_type", account_type);
+        tempJson.put("account_username", username);
+
+        send.put("data", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void loginRequestResponse(boolean success, JSONObject data) {
+
+        if (success) {
+
+            //logged in successfully
+            //editing gui buttons
+
+            logUser.setText("Logout");
+            userInfoButton.setEnabled(true);
+            friendsButton.setEnabled(true);
+            joinGame.setEnabled(true);
+            inviteButton.setEnabled(true);
+            buyButton.setEnabled(true);
+
+            //making new users
+
+            loadUser(data);
+            addTextInGui("Welcome " + user.getUsername());
+        } else {
+            addTextInGui("Login failed! No More guests allowed");
+        }
+    }
+
+    private void loadUser(JSONObject temp) {
+
+        user = User.JSONToUser(temp);
+        user.setLoggedIn(true);
+    }
+
+
+    private void requestUpdateOwn() {
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "UpdateOwn");
+
+        sendMessage(send.toString());
+    }
+
+    private void loadUpdateOwnResponse(JSONObject jsonObject) {
+
+        boolean response = jsonObject.getBoolean("response");
+
+        if (response) user = User.JSONToUser(jsonObject.getJSONObject("data"));
+    }
+
+    private void requestUpdateOwnInGame() {
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "UpdateOwnInGame");
+
+        sendMessage(send.toString());
+    }
+
+    private void loadUpdateOwnInGameResponse(JSONObject jsonObject) {
+
+        boolean response = jsonObject.getBoolean("response");
+
+        if (response) user = User.JSONToUserInGame(jsonObject.getJSONObject("data"));
+    }
+
+
+    private void logoutUser() {
+
+        //logged out successfully
+        //gui options
+        logUser.setText("Login");
+        userInfoButton.setEnabled(false);
+        friendsButton.setEnabled(false);
+        joinGame.setEnabled(false);
+        inviteButton.setEnabled(false);
+        buyButton.setEnabled(false);
+
+        addTextInGui("Logged out user " + user.getUsername());
+        user = null;
+    }
+
+    private void logoutRequestResponse(boolean success) {
+
+        if (success) {
+
+            logoutUser();
+        } else addTextInGui("Logout request failed");
+    }
+
+    private void sendLogoutRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "LogoutRequest");
+
+        sendMessage(send.toString());
+    }
+
+    private void closeEverything() {
+
+        try {
+            user = null;
+            this.dispose();
+            webSocketClient.close();
+        } catch (Exception e) {
+            addTextInGui("Error in closing connection in Client side, error -> " + e);
+        }
+    }
+
+    //=====================================================================================
     //
     //=====================================================================================
 
 
+    //=====================================================================================
+    //
+    //                  COIN ADDING FUNCTIONS
+    //
+    //=====================================================================================
+
+    private void receiveBuyCoinResponse(JSONObject temp) {
+
+        boolean success = jsonIncoming.getBoolean("success");
+        long value = jsonIncoming.getLong("currentCoin");
+
+        if (success) user.setCurrentCoin(value);
+        addTextInGui(jsonIncoming.getString("message"));
+    }
+
+    private void coinBuyRequest(long value, String method, String trId) {
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "BuyCoinRequest");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("method", method);
+        tempJson.put("transactionId", trId);
+        tempJson.put("value", value);
+
+        send.put("data", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void addCoinByVideoRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "AddCoinVideoRequest");
+        send.put("requestTime", Calendar.getInstance().getTime());
+
+        sendMessage(send.toString());
+    }
+
+    private void receiveAddCoinVideoResponse(JSONObject temp) {
+
+        boolean success = jsonIncoming.getBoolean("success");
+        long value = jsonIncoming.getLong("currentCoin");
+        Date d = User.stringToDate(jsonIncoming.getString("lastCoinVideoAvailableTime"));
+        long added = jsonIncoming.getLong("coinAdded");
+
+        if (success) {
+            user.setCurrentCoin(value);
+            user.setLastCoinVideoAvailableTime(d);
+        }
+        addTextInGui(jsonIncoming.getString("message"));
+    }
+
+    private void addFreeCoinRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "AddFreeCoinRequest");
+        send.put("requestTime", Calendar.getInstance().getTime());
+
+        sendMessage(send.toString());
+
+    }
+
+    private void receiveAddFreeCoinResponse(JSONObject temp) {
+
+        boolean success = jsonIncoming.getBoolean("success");
+        long value = jsonIncoming.getLong("currentCoin");
+        Date d = User.stringToDate(jsonIncoming.getString("lastFreeCoinTime"));
+        long coinAdded = jsonIncoming.getLong("coinAdded");
+
+        if (success) {
+            user.setCurrentCoin(value);
+            user.setLastFreeCoinTime(d);
+        }
+        addTextInGui(jsonIncoming.getString("message"));
+    }
+
+
+    //=====================================================================================
+    //
+    //=====================================================================================
+
+
+    //=====================================================================================
+    //
+    //                  JOIN/EXIT GAME FUNCTIONS
+    //
+    //=====================================================================================
+
+    private void requestJoin(int gameId, int gameCode, String boardType, long minEntryValue, long minCallValue, int owner_id, int seatPosition, long boardCoin) {
+
+        user.initializeGameData(gameId, gameCode, boardType, minEntryValue, minCallValue, owner_id, seatPosition, boardCoin);
+        sendJoinRequest();
+    }
+
+    private void sendJoinRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "JoinRequest");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", user.getGameId());
+        tempJson.put("gameCode", user.getGameCode());
+        tempJson.put("boardType", user.getBoardType());
+        tempJson.put("minEntryValue", user.getMinEntryValue());
+        tempJson.put("minCallValue", user.getMinCallValue());
+        tempJson.put("owner_id", user.getOwner_id());
+        tempJson.put("seatPosition", user.getSeatPosition());
+        tempJson.put("boardCoin", user.getBoardCoin());
+
+        send.put("data", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void requestJoinResponse(JSONObject temp) {
+
+        addTextInGui(jsonIncoming.get("data").toString());
+        joinGame.setText("Abort");
+    }
+
+
+    private void requestAbort() {
+
+        user.deInitializeGameData();
+        sendRequestAbort();
+    }
+
+    private void sendRequestAbort() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "AbortRequest");
+
+        sendMessage(send.toString());
+    }
+
+    private void requestAbortResponse(JSONObject temp) {
+
+        addTextInGui(jsonIncoming.get("data").toString());
+        joinGame.setText("Join");
+    }
+
+
+    private void requestExit() {
+
+        sendExitRequest();
+        leaveGameRoom();
+
+        disableGameButtons();
+        exitButton.setEnabled(false);
+        joinGame.setText("Join");
+        addTextInGui("Leaving game");
+    }
+
+    private void sendExitRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "ExitGame");
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+
+
+    }
+
+    private void leaveGameRoom() {
+
+        user.deInitializeGameData();
+        System.out.println(user);
+    }
+
+    //=====================================================================================
+    //
+    //=====================================================================================
+
+
+    //=======================================================================================
+    //
+    //              GAME THREAD FUNCTIONALITIES
+    //
+    //=======================================================================================
+
+
+    //=======================================================================================
+    //              INITIALIZING GAME DATA
+    //=======================================================================================
+
+    private void initializeGameData(JSONObject jsonObject) {
+
+        JSONObject gameData = jsonObject.getJSONObject("gameData");
+
+        int playerCount = gameData.getInt("playerCount");
+        int gameId = gameData.getInt("gameId");
+        int gameCode = gameData.getInt("gameCode");
+        int ownerId = gameData.getInt("ownerId");
+        int seatPosition = gameData.getInt("seatPosition");
+        int maxPlayerCount = gameData.getInt("maxPlayerCount");
+
+        user.joinedAGame(gameId, gameCode, ownerId, seatPosition, maxPlayerCount, playerCount);
+    }
+
+    private void loadPlayersData(JSONObject temp) {
+
+        JSONArray data = temp.getJSONArray("data");
+
+        for (int i = 0; i < data.length(); i++) {
+
+            User tempUser = User.JSONToUserInGame((JSONObject) data.get(i));
+            user.getInGamePlayers()[tempUser.getSeatPosition()] = tempUser;
+        }
+    }
+
+    private void loadGameRoomData(JSONObject jsonObject) {
+
+        User.loadGameRoomData(user, jsonObject);
+    }
+
+    private void showWelcomeGameMessage(JSONObject jsonObject) {             //GAME STARTING E
+
+        JSONObject gameData = jsonObject.getJSONObject("gameData");
+
+        String show = gameData.getString("message");
+        addTextInGui(show);
+    }
+
+
+    //=======================================================================================
+    //              INITIALIZING GAME DATA
+    //=======================================================================================
+
+
+    //=======================================================================================
+    //              INOMINGS FROM GAME THREAD
+    //=======================================================================================
+
+    private void gameRoundStart(JSONObject jsonObject) {                     //ROUND STARTING E
+
+        String message = jsonObject.getString("message");
+        addTextInGui(message);
+    }
+
+
+    private void loadCards(JSONObject jsonObject) {
+
+        int loc = -1;
+        JSONArray array = jsonObject.getJSONArray("data");
+        String req = jsonObject.getJSONObject("gameData").getString("gameRequest");
+
+        if (req.equals("LoadPlayerCards")) loc = 0;
+        else if (req.equals("LoadBoardCards")) loc = 1;
+
+
+        ArrayList location;
+        if (loc == 0) location = user.getPlayerCards();
+        else location = user.getBoardCards();
+
+        for (int i = 0; i < array.length(); i++) {
+
+            String x[] = array.getString(i).split("\\.");
+
+            Card card = new Card(Integer.valueOf(x[0]) - 1, Integer.valueOf(x[1]) - 2, loc);
+            location.add(card);
+        }
+    }
+
+
+    //  BOTH OF THEM UNNECESSARY, SHOW BOARD INFO CALLED FROM
+    //  AROUND LINE 443
+
+    private void showCards() {
+
+        String bleh = "";
+
+        bleh = "Board: ";
+        for (int i = 0; i < user.getBoardCards().size(); i++)
+            bleh += ((Card) user.getBoardCards().get(i)).toStringWithoutType() + "\n";
+        addTextInGui(bleh);
+
+
+        bleh = "Player: ";
+        for (int i = 0; i < user.getPlayerCards().size(); i++)
+            bleh += ((Card) user.getPlayerCards().get(i)).toStringWithoutType() + "\n";
+        addTextInGui(bleh);
+    }
+
+    private void showBoardInfo(JSONObject jsonObject) {
+
+        JSONObject data = jsonObject.getJSONObject("data");
+
+        int roundCount = data.getInt("roundCount");
+        long roundCoins = data.getLong("roundCoins");
+        int turnCount = data.getInt("turnCount");
+        int cycleCount = data.getInt("cycleCount");
+        long roundCall = data.getLong("roundCall");
+
+        String show = "round " + roundCount + " cycle " + cycleCount + " turn " + turnCount + "\n";
+        show += "round coin " + roundCoins + " round minimum call " + roundCall;
+
+        addTextInGui(show);
+
+        showCards();
+    }
+
+    private void showNextTurnInfo(JSONObject jsonObject) {
+
+        JSONObject temp = jsonObject.getJSONObject("data");
+
+        String username = temp.getString("username");
+        int pos = temp.getInt("seatPosition");
+
+        String show = username + "'s turn, seat position " + pos;
+        addTextInGui(show);
+    }
+
     //===================================================================================
     //
-    //      GAMETHREAD FUNCTIONS
+    //      GAME BUTTONS ENABLING
     //
     //===================================================================================
 
+    private void enableGameButtons(JSONObject JsonObject) {
 
-    //================================================================================================
-    //
-    //      ENABLES/DISABLES GAME BUTTONS FROM INFORMATION SENT BY SERVER
-    //      INFO CAME FROM
-    //                          incomingMsg() function
-    //                          gameThread YourTurn:
-    //                          or
-    //                          gameThread Disable:
-    //                          types
-    //
-    //      ENABLING BUTTON EXAMPLE:
-    //      STRING:             GameThread YourTurn :5 Fold bigBlind 10000 Call Raise Check AllIn
-    //
-    //      enableButtons( { 5, Fold, bigBlind, 10000, Call, Raise, Check, AllIn } )
-    //
-    //                      5 -> button count
-    //
-    //                      fold blinds came right after fold command
-    //                      fold cost follows it
-    //
-    //                      Call value are set by GameThread BoardInfo in incomingMsg functions.
-    //
-    //===============================================================================================
-
-
-    private void enableGameButtons(JSONArray temp) {
+        JSONArray temp = JsonObject.getJSONArray("data");
 
         String show = "";
+
         for (int i = 0; i < temp.length(); i++) {
 
             JSONObject jsonObject = temp.getJSONObject(i);
@@ -519,28 +973,33 @@ public class ClientToServer extends JFrame {
             if (jsonObject.getString("name").equals("Fold")) {
 
                 foldButton.setEnabled(true);
-                foldCost = jsonObject.getInt("cost");
 
                 show += "You can fold";
 
                 if (jsonObject.getString("blindType").equals("SmallBlind")) {
-                    show += ", small blind, folding will cost " + foldCost;
+                    show += ", small blind, folding will cost " + user.getFoldCost();
+
                 } else if (jsonObject.getString("blindType").equals("BigBlind")) {
-                    show += ", big blind, folding will cost " + foldCost;
+                    show += ", big blind, folding will cost " + user.getFoldCost();
+
                 }
                 show += "\n";
 
             } else if (jsonObject.getString("name").equals("Call")) {
-                show += "You can call, minimum value: " + minCallValue + "\n";
+
+                show += "You can call, minimum value: " + user.getRoundCall() + "\n";
                 callButton.setEnabled(true);
             } else if (jsonObject.getString("name").equals("Raise")) {
-                show += "You can raise, minimum value: " + minCallValue + "\n";
+
+                show += "You can raise, minimum value: " + user.getRoundCall() + "\n";
                 raiseButton.setEnabled(true);
                 textField.setEditable(true);
             } else if (jsonObject.getString("name").equals("Check")) {
+
                 show += "You can check\n";
                 checkButton.setEnabled(true);
             } else if (jsonObject.getString("name").equals("AllIn")) {
+
                 show += "You can go all in\n";
                 allInButton.setEnabled(true);
             }
@@ -562,6 +1021,172 @@ public class ClientToServer extends JFrame {
     //=================================================================================
 
 
+    //=====================================================================================
+    //
+    //              GAMETHREAD OUTCOMING
+    //
+    //
+    //=====================================================================================
+
+    public void sendGameThreadCallRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("roundCount", roundCount);
+        tempJson.put("turnCount", turnCount);
+
+        JSONObject tempJson2 = new JSONObject();
+
+        tempJson2.put("call", call);
+        //tempJson2.put("cost", minCallValue);
+
+        tempJson.put("callData", tempJson2);
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    public void sendGameThreadRaiseRequest(long value) {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("roundCount", roundCount);
+        tempJson.put("turnCount", turnCount);
+
+        JSONObject tempJson2 = new JSONObject();
+
+        tempJson2.put("call", call);
+        tempJson2.put("cost", value);
+
+        tempJson.put("callData", tempJson2);
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    public void sendGameThreadAllInRequest(long value) {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("roundCount", roundCount);
+        tempJson.put("turnCount", turnCount);
+
+        JSONObject tempJson2 = new JSONObject();
+
+        tempJson2.put("call", call);
+        tempJson2.put("cost", value);
+
+        tempJson.put("callData", tempJson2);
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    public void sendGameThreadCheckRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("roundCount", roundCount);
+        tempJson.put("turnCount", turnCount);
+
+        JSONObject tempJson2 = new JSONObject();
+
+        tempJson2.put("call", call);
+        tempJson2.put("cost", 0);
+
+        tempJson.put("callData", tempJson2);
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    public void sendGameThreadFoldRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("roundCount", roundCount);
+        tempJson.put("turnCount", turnCount);
+
+        JSONObject tempJson2 = new JSONObject();
+
+        tempJson2.put("call", call);
+        tempJson2.put("cost", foldCost);
+
+        tempJson.put("callData", tempJson2);
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void sendTryStartCurrentGameRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("gameId", gameThreadId);
+        tempJson.put("gameCode", gameThreadCode);
+        tempJson.put("requestType", "StartNewRound");
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+
+    }
+
+    //=====================================================================================
+    //
+    //
+    //=====================================================================================
+
     //===================================================================================
     //
     //      showCards:
@@ -580,36 +1205,6 @@ public class ClientToServer extends JFrame {
     //              WHERE AS ACTUAL RANGE IN CARD OBJECT IS 1-4, VALUE RANGE 2-14
     //
     //===================================================================================
-
-    private void showCards() {
-
-        String bleh = "";
-
-        bleh = "Board: ";
-        for (int i = 0; i < user.getBoardCards().size(); i++)
-            bleh += ((Card) user.getBoardCards().get(i)).toStringWithoutType() + "\n";
-        addTextInGui(bleh);
-
-
-        bleh = "Player: ";
-        for (int i = 0; i < user.getPlayerCards().size(); i++)
-            bleh += ((Card) user.getPlayerCards().get(i)).toStringWithoutType() + "\n";
-        addTextInGui(bleh);
-    }
-
-    private void decodeCards(JSONArray temp, int cardLocation) {
-
-        ArrayList location;
-        if (cardLocation == 0) location = user.getBoardCards();
-        else location = user.getPlayerCards();
-
-        for (int i = 0; i < temp.length(); i++) {
-            String x[] = temp.getString(i).split("\\.");
-
-            Card card = new Card(Integer.valueOf(x[0]) - 1, Integer.valueOf(x[1]) - 2, cardLocation);
-            location.add(card);
-        }
-    }
 
     //==================================================================================
 
@@ -712,75 +1307,7 @@ public class ClientToServer extends JFrame {
     //====================================================================================
 
 
-    //====================================================================================
-    //
-    //      GAME BUTTON ON CLICK FUNCTIONS
-    //
-    //      SENDS GAME TURN REQUESTS TO SERVER
-    //
-    //      WHICH BUTTONS WILL BE ENABLED IS SENT BY THE SERVER
-    //
-    //      CHECKED IF VALID INPUTS WERE GIVEN IN RAISE BUTTON CALL
-    //      OTHERWISE ALL BASIC
-    //
-    //====================================================================================
 
-    private void clickedCallButton() {
-        String send = "";
-        call = "Call";
-        user.setCurrentCoin(user.getCurrentCoin() - minCallValue);
-
-        sendGameThreadCallRequest();
-    }
-
-    private void clickedFoldButton() {
-        String send = "";
-        call = "Fold";
-        user.setCurrentCoin(user.getCurrentCoin() - foldCost);
-
-        sendGameThreadFoldRequest();
-    }
-
-    private void clickedRaiseButton() {
-
-        int y = -1, temp;
-
-        String str = textField.getText();
-        textField.setText("");
-
-        try {
-            temp = Integer.valueOf(str);
-            if (temp >= minCallValue && temp <= user.getCurrentCoin()) y = temp;
-            else addTextInGui("Integer must be between " + minCallValue + " " + user.getCurrentCoin());
-        } catch (Exception e) {
-            addTextInGui("Enter a valid number");
-        }
-        if (y == -1) return;
-
-        user.setCurrentCoin(user.getCurrentCoin() - y);
-
-        call = "Raise";
-        sendGameThreadRaiseRequest(y);
-    }
-
-    private void clickedCheckButton() {
-        call = "Check";
-        sendGameThreadCheckRequest();
-    }
-
-    private void clickedAllInButton() {
-        call = "AllIn";
-        int v = user.getCurrentCoin();
-
-        user.setCurrentCoin(0);
-        sendGameThreadAllInRequest(v);
-    }
-
-
-    //=====================================================================================
-    //
-    //
-    //=====================================================================================
 
 
     //===================================================================================
@@ -788,33 +1315,6 @@ public class ClientToServer extends JFrame {
     //              GUI ON CLICK BUTTONS
     //
     //===================================================================================
-
-    private void logUserClick() {
-
-        msg = "";
-        if (user != null) {
-            msg += "Logout";
-            sendLogoutRequest();
-            curCommand = "Logout";
-        } else {
-            msg += "Login ";
-            textField.setEditable(true);
-            inpCount = 2;
-            curCommand = "Login";
-
-            addTextInGui("Enter username and then password");
-        }
-    }
-
-    private void infoUserClick() {
-        curCommand = "UserInfo";
-        addTextInGui(user.toString());
-    }
-
-    private void clickedExitButton() {
-
-        requestExit();
-    }
 
     //=====================================================================================
     //      REQUESTS FRIENDLIST TO SERVER
@@ -824,46 +1324,12 @@ public class ClientToServer extends JFrame {
     //
     //=====================================================================================
 
-    private void friendListRequest() {
-        curCommand = "Friends";
-        requestFriendsList();
-    }
-
 
     //====================================================================================
     //      REQUEST TO JOIN A GAME
     //
     //
     //===================================================================================
-
-    private void joinClick() {
-
-        if (joinGame.getText().equals("Join")) {
-            joinRequest(true);
-            curCommand = "Join";
-        } else if (joinGame.getText().equals("Abort")) {
-            joinRequest(false);
-            curCommand = "Abort";
-        }
-    }
-
-    private void inviteButtonClick() {
-
-        ArrayList temp = new ArrayList<String>();
-
-        temp.add("b");
-        temp.add("c");
-        temp.add("d");
-
-        createWaitingRoom(temp, "board1", 100000, 100000);
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                startGameFromWaitingRoom();
-            }
-        }, 15000);
-    }
 
     private void createWaitingRoom(ArrayList<String> friends, String boardName, int minEntryCoin, int entryCoin) {
 
@@ -899,7 +1365,7 @@ public class ClientToServer extends JFrame {
 
     private void showInvitationInfo(JSONObject data) {
 
-        tempCode = data.getInt("roomCode");
+        tempCode = data.getInt("gameCode");
         tempBoard = data.getString("boardType");
         tempEntryValue = data.getInt("minEntryAmount");
         tempMinCallValue = data.getInt("minCallValue");
@@ -984,8 +1450,8 @@ public class ClientToServer extends JFrame {
 
         JSONObject tempJson = temp.getJSONObject("waitingRoomData");
 
-        gameThreadId = tempJson.getInt("roomId");
-        gameThreadCode = tempJson.getInt("roomCode");
+        gameThreadId = tempJson.getInt("gameId");
+        gameThreadCode = tempJson.getInt("gameCode");
         roomEntryValue = tempJson.getInt("userEntryAmount");
         gameRoomType = tempJson.getString("boardType");
         user.setSeatPosition(tempJson.getInt("seatPosition"));
@@ -993,7 +1459,7 @@ public class ClientToServer extends JFrame {
 
     private void sendCreateWaitingRoomRequest(ArrayList<String> friends, String boardName, int minEntryCoin, int entryCoin) {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("owner", user.getUsername());
         send.put("requestType", "WaitingRoom");
@@ -1001,8 +1467,8 @@ public class ClientToServer extends JFrame {
         JSONObject tempJson = new JSONObject();
 
         tempJson.put("requestType", "Create");
-        tempJson.put("roomId", user.getRoomId());
-        tempJson.put("roomCode", user.getRoomCode());
+        tempJson.put("gameId", user.getGameId());
+        tempJson.put("gameCode", user.getGameCode());
         tempJson.put("boardType", boardName);
         tempJson.put("entryAmount", minEntryCoin);
         tempJson.put("userEntryAmount", entryCoin);
@@ -1018,14 +1484,14 @@ public class ClientToServer extends JFrame {
 
     private void sendWaitingRoomInvitationAccept() {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("requestType", "WaitingRoom");
 
         JSONObject tempJson = new JSONObject();
 
         tempJson.put("requestType", "AcceptInvitation");
-        tempJson.put("roomCode", tempCode);
+        tempJson.put("gameCode", tempCode);
         tempJson.put("boardType", tempBoard);
         tempJson.put("userEntryAmount", 0);
 
@@ -1048,7 +1514,7 @@ public class ClientToServer extends JFrame {
 
     private void sendAddInWaitingRoomRequest(ArrayList<String> friends) {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("owner", user.getUsername());
         send.put("requestType", "WaitingRoom");
@@ -1068,7 +1534,7 @@ public class ClientToServer extends JFrame {
 
     private void sendRemoveFromWaitingRoomRequest(ArrayList<String> friends) {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("owner", user.getUsername());
         send.put("requestType", "WaitingRoom");
@@ -1088,7 +1554,7 @@ public class ClientToServer extends JFrame {
 
     private void sendRequestExitFromWaitingRoom() {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
         send.put("requestType", "WaitingRoom");
@@ -1103,14 +1569,14 @@ public class ClientToServer extends JFrame {
 
     private void sendJoinWaitingRoomByCodeRequest(int code) {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("requestType", "WaitingRoom");
 
         JSONObject tempJson = new JSONObject();
 
         tempJson.put("requestType", "AskJoinWaitingRoomByCode");
-        tempJson.put("roomCode", code);
+        tempJson.put("gameCode", code);
 
         send.put("waitingRoomData", tempJson);
         sendMessage(send.toString());
@@ -1123,7 +1589,7 @@ public class ClientToServer extends JFrame {
 
     private void sendStartGameRequest() {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("owner", owner);
         send.put("requestType", "WaitingRoom");
@@ -1163,51 +1629,7 @@ public class ClientToServer extends JFrame {
 
 
 
-    //======================================================================================
-    //
-    //      BUY COIN REQUEST
-    //      REQUEST COMPLETED IN guiFunctions() {}
-    //                           using addActionListener on textFields
-    //
-    //=======================================================================================
 
-    private void buyCoinClick() {
-        curCommand = "Buy";
-        textField.setEditable(true);
-    }
-
-    //
-    //
-    //=======================================================================================
-
-
-    //======================================================================================
-    //
-    //
-    //              CLOSING CONNECTION
-    //
-    //
-    //======================================================================================
-
-    private void closeEverything() {
-
-        try {
-            this.dispose();
-            webSocketClient.close();
-        } catch (Exception e) {
-            addTextInGui("Error in closing connection in Client side, error -> " + e);
-        }
-    }
-
-    private void closeButtonClicked() {
-        String ret = "";
-        ret = "Close";
-        closeEverything();
-    }
-
-    //=======================================================================================
-    //
-    //=======================================================================================
 
 
     //===========================================================================================
@@ -1216,11 +1638,85 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================================
 
+
+    private void logUserClick() {
+
+        msg = "";
+        if (user != null) {
+            msg += "Logout";
+            sendLogoutRequest();
+            curCommand = "Logout";
+        } else {
+            msg += "Login ";
+            textField.setEditable(true);
+            inpCount = 2;
+            curCommand = "Login";
+
+            addTextInGui("Enter username and then password");
+        }
+    }
+
+    private void infoUserClick() {
+        curCommand = "UserInfo";
+        addTextInGui(user.toString());
+    }
+
+    private void joinClick() {
+
+        if (joinGame.getText().equals("Join")) {
+            requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
+            curCommand = "Join";
+        } else if (joinGame.getText().equals("Abort")) {
+            requestAbort();
+            curCommand = "Abort";
+        }
+    }
+
+    private void inviteButtonClick() {
+
+        requestUpdateOwnInGame();
+
+        //addFreeCoinRequest();
+
+        /*
+        ArrayList temp = new ArrayList<String>();
+
+        temp.add("b");
+        temp.add("c");
+        temp.add("d");
+
+        createWaitingRoom(temp, "board1", 100000, 100000);
+
+        new Timer().schedule(new TimerTask() {
+            @Override
+            public void run() {
+                startGameFromWaitingRoom();
+            }
+        }, 15000);
+        */
+    }
+
+    private void friendsButtonClicked() {
+        curCommand = "Friends";
+        requestFriendsList();
+    }
+
+    private void closeButtonClicked() {
+        String ret = "";
+        ret = "Close";
+        closeEverything();
+    }
+
+    private void buyCoinClick() {
+        curCommand = "Buy";
+        textField.setEditable(true);
+    }
+
     private void guiFunctions() {
 
         logUser.addActionListener(e -> logUserClick());
         userInfoButton.addActionListener(e -> infoUserClick());
-        friendsButton.addActionListener(e -> friendListRequest());
+        friendsButton.addActionListener(e -> friendsButtonClicked());
         joinGame.addActionListener(e -> joinClick());
         buyButton.addActionListener(e -> buyCoinClick());
         inviteButton.addActionListener(e -> inviteButtonClick());
@@ -1253,7 +1749,12 @@ public class ClientToServer extends JFrame {
 
                         if (inpCount == 0) {
                             textField.setEditable(false);
-                            requestLogin(msg);
+
+                            String[] temp = msg.split(" ");
+                            String username = temp[1];
+                            String password = temp[2];
+
+                            requestLogin(username, password, "");
                             curCommand = "";
                         }
                     } else if (curCommand == "Buy") {
@@ -1393,102 +1894,9 @@ public class ClientToServer extends JFrame {
     //
     //=====================================================================================
 
-    private JSONObject initiateRequest() {
-
-        JSONObject temp = new JSONObject();
-
-        temp.put("sender", "Client");
-        temp.put("ip", host);
-        temp.put("port", port);
-
-        return temp;
-    }
-
-    private void loadUser(JSONObject tempJSON) {
-
-        user = new User(tempJSON.getString("username"), tempJSON.getString("password"), tempJSON.getInt("currentCoin"), tempJSON.getInt("coinWon"));
-    }
-
-    private void logoutUser() {
-        user = null;
-    }
-
-    private void receiveBuyCoinResponse(JSONObject temp) {
-        int value = jsonIncoming.getInt("currentCoin");
-
-        user.setCurrentCoin(value);
-        addTextInGui(jsonIncoming.getString("responseMsg"));
-    }
-
-    private void updateGameDataOnJoinRequest(boolean isJoin) {
-
-        if (isJoin) {
-            user.setRoomCode(-1);
-            user.setRoomId(-1);
-            user.setBoardType("board1");
-            user.setBoardCoin(0);
-        } else {
-            user.setRoomCode(-1);
-            user.setRoomId(-1);
-            user.setBoardType("");
-            user.setBoardCoin(-1);
-        }
-    }
-
-
-
-
-    private void requestLogin(String data) {
-
-        JSONObject send = initiateRequest();
-        send.put("requestType", "LoginRequest");
-
-
-        String[] temp = data.split(" ");
-        String username = temp[1];
-        String password = temp[2];
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("username", username);
-        tempJson.put("password", password);
-
-        send.put("data", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    private void coinBuyRequest(int value, String method, String trId) {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "BuyCoin");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("method", method);
-        tempJson.put("transactionId", trId);
-        tempJson.put("value", value);
-
-        send.put("data", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    private void sendLogoutRequest() {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "LogoutRequest");
-
-        sendMessage(send.toString());
-    }
-
     private void requestFriendsList() {
 
-        JSONObject send = initiateRequest();
+        JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
         send.put("requestType", "FriendsListRequest");
@@ -1517,29 +1925,6 @@ public class ClientToServer extends JFrame {
         addTextInGui(bleh);
     }
 
-    private void joinRequest(boolean isJoin) {
-
-        updateGameDataOnJoinRequest(isJoin);
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "JoinRequest");
-
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("requestIn", isJoin);
-        tempJson.put("roomId", user.getRoomId());
-        tempJson.put("roomCode", user.getRoomCode());
-        tempJson.put("boardType", user.getBoardType());
-        tempJson.put("entryAmount", user.getBoardCoin());
-
-        send.put("data", tempJson);
-
-        sendMessage(send.toString());
-    }
-
     //=====================================================================================
     //
     //              JSON CODES
@@ -1548,90 +1933,24 @@ public class ClientToServer extends JFrame {
     //=====================================================================================
 
 
-    //=======================================================================================
-    //
-    //
-    //
-    //=======================================================================================
 
-    private void initiateGameRoom(JSONObject temp) {
 
-        gameRunning = true;
-        gameThreadId = temp.getInt("id");
-        gameThreadCode = temp.getInt("code");
-        gameRoomType = temp.getString("roomType");
-        roomEntryValue = temp.getInt("entryCoinAmount");
-        user.setSeatPosition(temp.getInt("seatPosition"));
-    }
 
-    private void leaveGameRoom() {
 
-        gameThreadId = -1;
-        gameThreadCode = -1;
-        roomEntryValue = 0;
-        gameRoomType = "";
-        gameRunning = false;
-        user.setSeatPosition(-1);
-    }
 
     private void gameStartIfInAGame() {
 
         //KONO GAME E NAI
         if (gameThreadId == -1) return;
-
         if (gameRunning == true) return;
 
         sendTryStartCurrentGameRequest();
     }
 
-    private void requestExit() {
-
-        sendExitRequest();
-        leaveGameRoom();
-        disableGameButtons();
-        exitButton.setEnabled(false);
-        joinGame.setText("Join");
-        addTextInGui("Leaving game");
-    }
 
 
 
 
-    private void loadRoomData(JSONArray data) {
-
-        System.out.println("Loading room data");
-        System.out.println(data);
-
-
-    }
-
-    private void showRoundStartMessage(String msg) {                     //ROUND STARTING E
-
-        addTextInGui(msg);
-
-
-    }
-
-    private void checkIfCoinMatch(int value) {
-
-        int serverSideCoin = value;
-
-        if (user.getCurrentCoin() == serverSideCoin) addTextInGui("Coin count in both end, okay");
-        else if (user.getCurrentCoin() != serverSideCoin) addTextInGui("Something is wrong, you will be banned");
-    }
-
-    private void setBoardInfo(JSONObject data) {
-
-        boardCoin = data.getInt("boardCoin");
-        roundCount = data.getInt("roundCount");
-        turnCount = data.getInt("turnCount");
-        cycleCount = data.getInt("cycleCount");
-        minCallValue = data.getInt("minimumCallValue");
-
-        String show = "round " + roundCount + " board-coin " + boardCoin + " turn: " + turnCount + " cycle: " + cycleCount + " round-call: " + minCallValue;
-        addTextInGui(show);
-        showCards();
-    }
 
     private void roundInitialize() {
 
@@ -1653,17 +1972,6 @@ public class ClientToServer extends JFrame {
     private void showEndCycle(String msg) {
 
         addTextInGui(msg);
-    }
-
-    private void showWelcomeMessage(JSONObject jsonObject) {             //GAME STARTING E
-
-        String show;
-
-        show = "Welcome to game room!\n";
-        show += "Game id: " + gameThreadId + " game code: " + gameThreadCode + " board type: " + gameRoomType + " entry value: " + roomEntryValue;
-        show += "Seat: " + user.getSeatPosition();
-
-        addTextInGui(show);
     }
 
     private void showAllCards(JSONObject jsonObject) {
@@ -1705,196 +2013,85 @@ public class ClientToServer extends JFrame {
 
     }
 
-    private void showNextTurnInfo(JSONObject jsonObject) {
 
-        String username = jsonObject.getString("username");
-        int pos = jsonObject.getInt("seatPosition");
+    //====================================================================================
+    //
+    //      GAME BUTTON ON CLICK FUNCTIONS
+    //
+    //      SENDS GAME TURN REQUESTS TO SERVER
+    //
+    //      WHICH BUTTONS WILL BE ENABLED IS SENT BY THE SERVER
+    //
+    //      CHECKED IF VALID INPUTS WERE GIVEN IN RAISE BUTTON CALL
+    //      OTHERWISE ALL BASIC
+    //
+    //====================================================================================
 
-        String show = username + "'s turn, seat position " + pos;
-        addTextInGui(show);
+    private void clickedCallButton() {
+        String send = "";
+        call = "Call";
+        //user.setCurrentCoin(user.getCurrentCoin() - minCallValue);
 
+        sendGameThreadCallRequest();
     }
 
+    private void clickedFoldButton() {
+        String send = "";
+        call = "Fold";
+        //user.setCurrentCoin(user.getCurrentCoin() - foldCost);
+
+        sendGameThreadFoldRequest();
+    }
+
+    private void clickedRaiseButton() {
+
+        int y = -1, temp;
+
+        String str = textField.getText();
+        textField.setText("");
+
+        try {
+            temp = Integer.valueOf(str);
+            //if (temp >= minCallValue && temp <= user.getCurrentCoin()) y = temp;
+            //else addTextInGui("Integer must be between " + minCallValue + " " + user.getCurrentCoin());
+        } catch (Exception e) {
+            addTextInGui("Enter a valid number");
+        }
+        if (y == -1) return;
+
+        //user.setCurrentCoin(user.getCurrentCoin() - y);
+
+        call = "Raise";
+        sendGameThreadRaiseRequest(y);
+    }
+
+    private void clickedCheckButton() {
+        call = "Check";
+        sendGameThreadCheckRequest();
+    }
+
+    private void clickedAllInButton() {
+        call = "AllIn";
+        long v = user.getCurrentCoin();
+
+        //user.setCurrentCoin(0);
+        sendGameThreadAllInRequest(v);
+    }
+
+    private void clickedExitButton() {
+
+        requestExit();
+    }
 
 
     //=====================================================================================
     //
-    //              GAMETHREAD JSON CODES
-    //
     //
     //=====================================================================================
 
-    public void sendGameThreadCallRequest() {
 
-        JSONObject send = initiateRequest();
 
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
 
-        JSONObject tempJson = new JSONObject();
 
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
 
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", minCallValue);
-
-        tempJson.put("callData", tempJson2);
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    public void sendGameThreadRaiseRequest(int value) {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", value);
-
-        tempJson.put("callData", tempJson2);
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    public void sendGameThreadAllInRequest(int value) {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", value);
-
-        tempJson.put("callData", tempJson2);
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    public void sendGameThreadCheckRequest() {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", 0);
-
-        tempJson.put("callData", tempJson2);
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    public void sendGameThreadFoldRequest() {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", foldCost);
-
-        tempJson.put("callData", tempJson2);
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-    }
-
-    private void sendTryStartCurrentGameRequest() {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "StartNewRound");
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-
-    }
-
-    private void sendExitRequest() {
-
-        JSONObject send = initiateRequest();
-
-        send.put("username", user.getUsername());
-        send.put("requestType", "GameThread");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "ExitGame");
-
-        send.put("gameData", tempJson);
-
-        sendMessage(send.toString());
-
-
-    }
 }
