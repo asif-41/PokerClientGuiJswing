@@ -1,6 +1,5 @@
 package Objects;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.text.ParseException;
@@ -29,12 +28,11 @@ public class User {
     //
     //============================================================================
 
-    public static final String rankString[] = {"Newbie", "Beginner", "Amateur", "Semi-Pro", "Pro", "World-Class",
-            "Legendary"};
+    private static final long expIncrease = 25;
+    public static final String rankString[] = {"Newbie", "Beginner", "Amateur", "Semi-Pro", "Pro", "World-Class", "Legendary"};
+    private static final long ranksValue[] = {0, 500, 2000, 7500, 20000, 50000};
 
     private String username;            //      USERNAME
-    private static final long expIncrease = 25;
-    private static final long ranksValue[] = {0, 500, 2000, 7500, 20000, 50000};
     private int id;                     //      USER ID
     private Date DOB;                   //      DATE OF BIRTH
     private int age;                    //      AGE
@@ -62,6 +60,10 @@ public class User {
     private Date lastCoinVideoAvailableTime;    //  LAST COIN VIDEO AVAILABLE IN TIME
     private Date lastLoggedInTime;      //      LAST LOGGED IN TIME
     private Date lastFreeCoinTime;      //      LAST FREE COIN AVAIABLE IN TIME
+    private Date currentLoginTime;      //      CURRENT SESSION LOGIN TIME
+
+    private long biggestWin;            //      BIGGEST POT WIN
+    private String bestHand;            //      BEST HAND
 
     //==================================================================================
     //
@@ -76,17 +78,15 @@ public class User {
     //      NOT USED IN SERVER SIDE
     //      BECAUSE, FOR ALL PLAYERS, SAME BOARD CARDS
     //      RATHER USED AN ARRAYLIST FOR BOARD CARDS
-    private Date currentLoginTime;      //      CURRENT SESSION LOGIN TIME
-    private long biggestWin;            //      BIGGEST POT WIN
-    private String bestHand;            //      BEST HAND
-    private String boardType;           //      ROOM TYPE
     private int gameId;                 //      GAME ROOM ID
     private int gameCode;               //      GAME ROOM CODE
+    private String boardType;           //      ROOM TYPE
     private int maxPlayerCount;         //      MAX PLAYER COUNT IN A GAME
     private long minEntryValue;          //      MIN ENTRY COIN AMOUNT
     private int seatPosition;           //      SEAT POSITION IN GAME
     private long minCallValue;           //      MIN CALL VALUE
     private int owner_id;               //      OWNER ID OF CURRENT GAME OR ROOM
+
     private long boardCoin;              //      ENTRY TO BOARD WITH THIS AMOUNT OF COIN
     private long callValue;              //      CALL VALUE OF THIS USER
     private long totalCallValue;        //      TOTAL CALL VALUE OF THIS USER
@@ -103,10 +103,15 @@ public class User {
     private int smallBlindSeat;         //      LOCATION OF PLAYER WHO WILL HAVE SMALL BLIND
     private int bigBlindSeat;           //      LOCATION OF PLAYER WHO WILL HAVE BIG BLIND
     private boolean gameRunning;        //      GAME RUNNING OR NOT
-    private int playerCount;            //      PLAYER COUNT IN GAMe
+    private int playerCount;            //      PLAYER COUNT IN GAME
+
     private User[] inGamePlayers;         //      IN GAME PLAYERS DATA STORED HERE
+
     private int tempId;                 //      INVITATION ID
     private int tempCode;               //      INVITATION CODE
+    private String tempBoardType;       //      INVITATION BOARD
+    private long tempMinEntryValue;      //      INVITATION ENTRY VALUE
+    private long tempMinCallValue;       //      INTVITATION CALL VALUE
 
 
     //============================================================================
@@ -122,14 +127,11 @@ public class User {
     //       OR AS GUEST USER
     //
     //============================================================================
-    private String tempBoardType;       //      INVITATION BOARD
-    private long tempMinEntryValue;      //      INVITATION ENTRY VALUE
-    private long tempMinCallValue;       //      INTVITATION CALL VALUE
 
     public User(int id, String username, Date DOB, int age, String fb_id, String gmail_id, String loginMethod,
                 long exp,
-                long currentCoin, long coinWon, long coinLost, int roundsWon, int roundsPlayed, double winPercentage,
-                int winStreak, int level, String rank, int totalCallCount, int callCount, int raiseCount,
+                long currentCoin, long coinWon, long coinLost, int roundsWon, int roundsPlayed,
+                int winStreak, int totalCallCount, int callCount, int raiseCount,
                 int foldCount, int allInCount, int checkCount, long biggestWin, String bestHand, int coinVideoCount, Date lastCoinVideoAvailableTime,
                 Date lastLoggedInTime, Date lastFreeCoinTime, Date currentLoginTime) {
 
@@ -146,10 +148,10 @@ public class User {
         this.coinLost = coinLost;
         this.roundsWon = roundsWon;
         this.roundsPlayed = roundsPlayed;
-        this.winPercentage = winPercentage;
+        this.winPercentage = win_percentage(roundsPlayed, roundsWon);
         this.winStreak = winStreak;
-        this.level = level;
-        this.rank = rank;
+        this.level = level(exp);
+        this.rank = getRank(coinWon, coinLost);
         this.totalCallCount = totalCallCount;
         this.callCount = callCount;
         this.raiseCount = raiseCount;
@@ -203,10 +205,100 @@ public class User {
         temp.put("lastLoggedInTime", user.getLastLoggedInTime());
         temp.put("lastFreeCoinTime", user.getLastFreeCoinTime());
         temp.put("currentLoginTime", user.getCurrentLoginTime());
-        temp.put("biggestWin", user.getBiggestWin());
-        temp.put("bestHand", user.getBestHand());
+        temp.put("biggestWin", user.biggestWin);
+        temp.put("bestHand", user.bestHand);
 
         return temp;
+    }
+
+    public static void loadOwnSelfFromInGamePlayers(User user) {
+
+        if (user == null) return;
+
+        int loc = user.seatPosition;
+        User data = user.inGamePlayers[loc];
+
+        user.exp = data.exp;
+        user.currentCoin = data.currentCoin;
+        user.coinWon = data.coinWon;
+        user.coinLost = data.coinLost;
+        user.roundsWon = data.roundsWon;
+        user.roundsPlayed = data.roundsPlayed;
+        user.winPercentage = data.winPercentage;
+        user.winStreak = data.winStreak;
+        user.level = data.level;
+        user.rank = data.rank;
+        user.totalCallCount = data.totalCallCount;
+        user.callCount = data.callCount;
+        user.raiseCount = data.raiseCount;
+        user.allInCount = data.allInCount;
+        user.checkCount = data.checkCount;
+        user.foldCount = data.foldCount;
+        user.biggestWin = data.biggestWin;
+        user.bestHand = data.bestHand;
+
+        user.boardCoin = data.boardCoin;
+
+        user.gameRunning = data.gameRunning;
+        user.roundCount = data.roundCount;
+        user.cycleCount = data.cycleCount;
+        user.turnCount = data.turnCount;
+        user.roundCall = data.roundCall;
+        user.roundCoins = data.roundCoins;
+        user.roundIteratorSeat = data.roundIteratorSeat;
+        user.roundStarterSeat = data.roundStarterSeat;
+        user.smallBlindSeat = data.smallBlindSeat;
+        user.bigBlindSeat = data.bigBlindSeat;
+        user.foldCost = data.foldCost;
+        user.call = data.call;
+        user.callValue = data.callValue;
+        user.totalCallValue = data.totalCallValue;
+    }
+
+    public static void loadGameRoomData(User user, JSONObject jsonObject) {
+
+        JSONObject data = jsonObject.getJSONObject("data");
+
+        user.roundCount = data.getInt("roundCount");
+        user.roundCall = data.getLong("roundCall");
+        user.roundStarterSeat = data.getInt("roundStarterSeat");
+        user.bigBlindSeat = data.getInt("bigBlindSeat");
+        user.smallBlindSeat = data.getInt("smallBlindSeat");
+
+        user.gameRunning = data.getBoolean("gameRunning");
+        user.roundCoins = data.getLong("roundCoins");
+
+        user.foldCost = data.getLong("foldCost");
+        user.turnCount = data.getInt("turnCount");
+        user.cycleCount = data.getInt("cycleCount");
+        user.roundIteratorSeat = data.getInt("roundIteratorSeat");
+
+        user.call = data.getString("call");
+        user.callValue = data.getLong("callValue");
+        user.totalCallValue = data.getLong("totalCallValue");
+    }
+
+    public static long getExpIncrease() {
+        return expIncrease;
+    }
+
+    public static long[] getRanksValue() {
+        return ranksValue;
+    }
+
+    //============================================================================
+    //              CONSTRUCTING DONE
+    //============================================================================
+
+
+    //============================================================================
+    //
+    //              CONSTRUCTING THROUGH JSON
+    //
+    //============================================================================
+
+    public static String[] getRankString() {
+        return rankString;
     }
 
     public static User JSONToUser(JSONObject temp) {
@@ -224,10 +316,7 @@ public class User {
                 temp.getLong("coinLost"),
                 temp.getInt("roundsWon"),
                 temp.getInt("roundsPlayed"),
-                temp.getDouble("winPercentage"),
                 temp.getInt("winStreak"),
-                temp.getInt("level"),
-                temp.getString("rank"),
                 temp.getInt("totalCallCount"),
                 temp.getInt("callCount"),
                 temp.getInt("raiseCount"),
@@ -245,18 +334,6 @@ public class User {
         return user;
     }
 
-
-    //============================================================================
-    //              CONSTRUCTING DONE
-    //============================================================================
-
-
-    //============================================================================
-    //
-    //              CONSTRUCTING THROUGH JSON
-    //
-    //============================================================================
-
     public static User JSONToUserInGame(JSONObject temp) {
 
         User user = new User(temp.getInt("id"),
@@ -272,10 +349,7 @@ public class User {
                 temp.getLong("coinLost"),
                 temp.getInt("roundsWon"),
                 temp.getInt("roundsPlayed"),
-                temp.getDouble("winPercentage"),
                 temp.getInt("winStreak"),
-                temp.getInt("level"),
-                temp.getString("rank"),
                 temp.getInt("totalCallCount"),
                 temp.getInt("callCount"),
                 temp.getInt("raiseCount"),
@@ -314,7 +388,6 @@ public class User {
         user.call = temp.getString("playerCall");
         user.callValue = temp.getLong("callValue");
         user.totalCallValue = temp.getLong("totalCallValue");
-
 
         return user;
     }
@@ -381,41 +454,45 @@ public class User {
         return temp;
     }
 
-    public static void loadGameRoomData(User user, JSONObject jsonObject) {
+    public void initializeGameData(int gameId, int gameCode, String boardType, long minEntryValue, long minCallValue, int owner_id, int seatPosition, long boardCoin) {
 
-        JSONObject data = jsonObject.getJSONObject("data");
+        playerCards.clear();
+        boardCards.clear();
 
-        user.roundCount = data.getInt("roundCount");
-        user.roundCall = data.getLong("roundCall");
-        user.roundStarterSeat = data.getInt("roundStarterSeat");
-        user.bigBlindSeat = data.getInt("bigBlindSeat");
-        user.smallBlindSeat = data.getInt("smallBlindSeat");
+        this.gameId = gameId;
+        this.gameCode = gameCode;
+        this.boardType = boardType;
+        this.minEntryValue = minEntryValue;
+        this.minCallValue = minCallValue;
+        this.owner_id = owner_id;
+        this.seatPosition = seatPosition;
 
-        user.gameRunning = data.getBoolean("gameRunning");
-        user.roundCoins = data.getLong("roundCoins");
-
-        user.foldCost = data.getLong("foldCost");
-        user.turnCount = data.getInt("turnCount");
-        user.cycleCount = data.getInt("cycleCount");
-        user.roundIteratorSeat = data.getInt("roundIteratorSeat");
-
-        JSONArray playerTotalCallValues = data.getJSONArray("playerTotalCallValues");
-        JSONArray playerCalls = data.getJSONArray("playerCalls");
-        JSONArray playerCallValues = data.getJSONArray("playerCallValues");
-
-        user.call = playerCalls.getString(user.seatPosition);
-        user.callValue = playerCallValues.getLong(user.seatPosition);
-        user.totalCallValue = playerTotalCallValues.getLong(user.seatPosition);
-
-        for (int i = 0; i < user.maxPlayerCount; i++) {
-
-            if (user.inGamePlayers[i] == null) continue;
-
-            user.inGamePlayers[i].totalCallValue = playerTotalCallValues.getLong(i);
-            user.inGamePlayers[i].call = playerCalls.getString(i);
-            user.inGamePlayers[i].callValue = playerCallValues.getLong(i);
-        }
+        this.boardCoin = boardCoin;
+        currentCoin = currentCoin - boardCoin;
     }
+
+    public void joinedAGame(int gameId, int gameCode, int owner_id, int seatPosition, int maxPlayerCount, int playerCount) {
+
+        this.playerCount = playerCount;
+        this.maxPlayerCount = maxPlayerCount;
+        this.maxPlayerCount = maxPlayerCount;
+        inGamePlayers = new User[maxPlayerCount];
+
+        inGame = true;
+        this.gameId = gameId;
+        this.gameCode = gameCode;
+        this.owner_id = owner_id;
+        this.seatPosition = seatPosition;
+    }
+
+
+    //============================================================================
+    //
+    //          NECESSARY FUNCTIONS
+    //
+    //============================================================================
+
+
 
     public static String getRank(long coins_won, long coins_lost) {
 
@@ -433,34 +510,9 @@ public class User {
         return res;
     }
 
-    /*
-        Given the exp points as input, calculates and returns the level
-    */
     public static int level(long exp) {
         return (int) (1 + sqrt(1 + 8 * exp / 50)) / 2;
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    //============================================================================
-    //
-    //          NECESSARY FUNCTIONS
-    //
-    //============================================================================
 
     public static double win_percentage(int played, int won) {
         if (played == 0) {
@@ -549,52 +601,10 @@ public class User {
     Given the number of rounds played and number of rounds won, calculates the win perentage of a player
      */
 
-    public static long getExpIncrease() {
-        return expIncrease;
-    }
 
     /*
     Calculates age given the date of birth as string in "YYYY/MM/DD" format
      */
-
-    public static long[] getRanksValue() {
-        return ranksValue;
-    }
-
-    public static String[] getRankString() {
-        return rankString;
-    }
-
-    public void initializeGameData(int gameId, int gameCode, String boardType, long minEntryValue, long minCallValue, int owner_id, int seatPosition, long boardCoin) {
-
-        playerCards.clear();
-        boardCards.clear();
-
-        this.gameId = gameId;
-        this.gameCode = gameCode;
-        this.boardType = boardType;
-        this.minEntryValue = minEntryValue;
-        this.minCallValue = minCallValue;
-        this.owner_id = owner_id;
-        this.seatPosition = seatPosition;
-
-        this.boardCoin = boardCoin;
-        currentCoin = currentCoin - boardCoin;
-    }
-
-    public void joinedAGame(int gameId, int gameCode, int owner_id, int seatPosition, int maxPlayerCount, int playerCount) {
-
-        this.playerCount = playerCount;
-        this.maxPlayerCount = maxPlayerCount;
-        this.maxPlayerCount = maxPlayerCount;
-        inGamePlayers = new User[maxPlayerCount];
-
-        inGame = true;
-        this.gameId = gameId;
-        this.gameCode = gameCode;
-        this.owner_id = owner_id;
-        this.seatPosition = seatPosition;
-    }
 
     //============================================================================
     //
@@ -606,6 +616,14 @@ public class User {
     //          GETTERS AND SETTERS
     //
     //============================================================================
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
 
     public void deInitializeGameData() {
 
@@ -654,14 +672,6 @@ public class User {
         this.tempMinCallValue = tempMinCallValue;
         this.tempMinEntryValue = tempMinEntryValue;
         this.tempBoardType = tempBoardType;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
-    public void setUsername(String username) {
-        this.username = username;
     }
 
     public void deInitializeInvitationData() {
@@ -767,6 +777,7 @@ public class User {
 
     public void setExp(long exp) {
         this.exp = exp;
+        this.level = level(this.exp);
     }
 
     public long getCurrentCoin() {
@@ -783,6 +794,7 @@ public class User {
 
     public void setCoinWon(long coinWon) {
         this.coinWon = coinWon;
+        this.rank = getRank(coinWon, coinLost);
     }
 
     public long getCoinLost() {
@@ -791,6 +803,7 @@ public class User {
 
     public void setCoinLost(long coinLost) {
         this.coinLost = coinLost;
+        this.rank = getRank(coinWon, coinLost);
     }
 
     public long getBiggestWin() {
@@ -807,6 +820,7 @@ public class User {
 
     public void setRoundsWon(int roundsWon) {
         this.roundsWon = roundsWon;
+        this.winPercentage = win_percentage(roundsPlayed, roundsWon);
     }
 
     public int getRoundsPlayed() {
@@ -815,6 +829,7 @@ public class User {
 
     public void setRoundsPlayed(int roundsPlayed) {
         this.roundsPlayed = roundsPlayed;
+        this.winPercentage = win_percentage(roundsPlayed, roundsWon);
     }
 
     public String getBestHand() {

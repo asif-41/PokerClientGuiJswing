@@ -386,9 +386,6 @@ public class ClientToServer extends JFrame {
             } else if (tempJson.get("gameRequest").equals("LoadPlayersData")) {
 
                 loadPlayersData(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("LoadGameRoomData")) {
-
-                loadGameRoomData(jsonIncoming);
             } else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
 
                 showWelcomeGameMessage(jsonIncoming);
@@ -405,6 +402,9 @@ public class ClientToServer extends JFrame {
             } else if (tempJson.get("gameRequest").equals("ShowBoardInfo")) {
 
                 showBoardInfo(jsonIncoming);
+            } else if (tempJson.get("gameRequest").equals("ShowCards")) {
+
+                showCards();
             } else if (tempJson.get("gameRequest").equals("ShowNextTurnInfo")) {
 
                 showNextTurnInfo(jsonIncoming);
@@ -567,6 +567,7 @@ public class ClientToServer extends JFrame {
     }
 
 
+
     private void logoutUser() {
 
         //logged out successfully
@@ -668,10 +669,12 @@ public class ClientToServer extends JFrame {
         long value = jsonIncoming.getLong("currentCoin");
         Date d = User.stringToDate(jsonIncoming.getString("lastCoinVideoAvailableTime"));
         long added = jsonIncoming.getLong("coinAdded");
+        int count = jsonIncoming.getInt("coinVideoCount");
 
         if (success) {
             user.setCurrentCoin(value);
             user.setLastCoinVideoAvailableTime(d);
+            user.setCoinVideoCount(count);
         }
         addTextInGui(jsonIncoming.getString("message"));
     }
@@ -702,7 +705,6 @@ public class ClientToServer extends JFrame {
         }
         addTextInGui(jsonIncoming.getString("message"));
     }
-
 
     //=====================================================================================
     //
@@ -773,6 +775,15 @@ public class ClientToServer extends JFrame {
         joinGame.setText("Join");
     }
 
+
+
+
+
+    /*
+
+    BAAD
+
+     */
 
     private void requestExit() {
 
@@ -850,11 +861,7 @@ public class ClientToServer extends JFrame {
             User tempUser = User.JSONToUserInGame((JSONObject) data.get(i));
             user.getInGamePlayers()[tempUser.getSeatPosition()] = tempUser;
         }
-    }
-
-    private void loadGameRoomData(JSONObject jsonObject) {
-
-        User.loadGameRoomData(user, jsonObject);
+        User.loadOwnSelfFromInGamePlayers(user);
     }
 
     private void showWelcomeGameMessage(JSONObject jsonObject) {             //GAME STARTING E
@@ -939,8 +946,6 @@ public class ClientToServer extends JFrame {
         show += "round coin " + roundCoins + " round minimum call " + roundCall;
 
         addTextInGui(show);
-
-        showCards();
     }
 
     private void showNextTurnInfo(JSONObject jsonObject) {
