@@ -18,6 +18,8 @@ import java.net.URI;
 import java.util.Timer;
 import java.util.*;
 
+import static java.lang.StrictMath.max;
+
 public class ClientToServer extends JFrame {
 
     //========================================================
@@ -174,25 +176,6 @@ public class ClientToServer extends JFrame {
         curCommand = "";
         msg = "";
 
-
-        //  DELETE
-
-        gameThreadId = -1;
-        gameThreadCode = -1;
-        roomEntryValue = 0;
-        gameRoomType = "";
-        gameRunning = false;
-
-        tempCode = -1;
-        tempBoard = "";
-        tempEntryValue = 0;
-        tempMinCallValue = 0;
-
-        //  DELETE
-
-
-
-
         createWebSocketClient();
         tryConnection();
     }
@@ -337,99 +320,129 @@ public class ClientToServer extends JFrame {
         if (jsonIncoming.get("requestType").equals("LoginResponse")) {
 
             loginRequestResponse(jsonIncoming.getBoolean("response"), jsonIncoming.getJSONObject("data"));
-        } else if (jsonIncoming.get("requestType").equals("LogoutResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("LogoutResponse")) {
 
             logoutRequestResponse(jsonIncoming.getBoolean("success"));
-        } else if (jsonIncoming.get("requestType").equals("BuyCoinResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("BuyCoinResponse")) {
 
             //requesting to buy coins
 
             receiveBuyCoinResponse(jsonIncoming);
             //gameStartIfInAGame();
-        } else if (jsonIncoming.get("requestType").equals("AddCoinVideoResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("AddCoinVideoResponse")) {
 
             //requesting to buy coins
 
             receiveAddCoinVideoResponse(jsonIncoming);
             //gameStartIfInAGame();
-        } else if (jsonIncoming.get("requestType").equals("AddFreeCoinResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("AddFreeCoinResponse")) {
 
             //requesting to buy coins
 
             receiveAddFreeCoinResponse(jsonIncoming);
             //gameStartIfInAGame();
-        } else if (jsonIncoming.get("requestType").equals("FriendsList")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("FriendsList")) {
 
             //requesting friends list
             JSONArray friends = jsonIncoming.getJSONArray("data");
 
             showFriends(friends);
-        } else if (jsonIncoming.get("requestType").equals("JoinResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("JoinResponse")) {
 
             requestJoinResponse(jsonIncoming);
-        } else if (jsonIncoming.get("requestType").equals("AbortResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("AbortResponse")) {
 
             requestAbortResponse(jsonIncoming);
-        } else if (jsonIncoming.get("requestType").equals("UpdateOwnResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("UpdateOwnResponse")) {
 
             loadUpdateOwnResponse(jsonIncoming);
-        } else if (jsonIncoming.get("requestType").equals("UpdateOwnInGameResponse")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("UpdateOwnInGameResponse")) {
 
             loadUpdateOwnInGameResponse(jsonIncoming);
-        } else if (jsonIncoming.get("requestType").equals("GameRoom")) {
+        }
+        else if (jsonIncoming.get("requestType").equals("GameRoom")) {
 
             JSONObject tempJson = jsonIncoming.getJSONObject("gameData");
 
             if (tempJson.get("gameRequest").equals("InitializeGameData")) {
 
                 initializeGameData(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("LoadPlayersData")) {
+            }
+            else if (tempJson.get("gameRequest").equals("LoadPlayersData")) {
 
                 loadPlayersData(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
+            }
+            else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
 
                 showWelcomeGameMessage(jsonIncoming);
                 exitButton.setEnabled(true);
-            } else if (tempJson.get("gameRequest").equals("RoundStartMessage")) {
+            }
+            else if (tempJson.get("gameRequest").equals("RoundStartMessage")) {
 
                 gameRoundStart(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("LoadPlayerCards")) {
+            }
+            else if (tempJson.get("gameRequest").equals("LoadPlayerCards")) {
 
                 loadCards(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("LoadBoardCards")) {
+            }
+            else if (tempJson.get("gameRequest").equals("LoadBoardCards")) {
 
                 loadCards(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("ShowBoardInfo")) {
+            }
+            else if (tempJson.get("gameRequest").equals("ShowBoardInfo")) {
 
                 showBoardInfo(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("ShowCards")) {
+            }
+            else if (tempJson.get("gameRequest").equals("ShowCards")) {
 
                 showCards();
-            } else if (tempJson.get("gameRequest").equals("ShowNextTurnInfo")) {
+            }
+            else if (tempJson.get("gameRequest").equals("ShowNextTurnInfo")) {
 
                 showNextTurnInfo(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("DisableGameButtons")) {
+            }
+            else if (tempJson.get("gameRequest").equals("DisableGameButtons")) {
 
                 disableGameButtons();
-            } else if (tempJson.get("gameRequest").equals("EnableGameButtons")) {
+            }
+            else if (tempJson.get("gameRequest").equals("EnableGameButtons")) {
 
                 enableGameButtons(jsonIncoming);
-            } else if (tempJson.get("gameRequest").equals("TurnInfo")) {
+            }
+            else if (tempJson.get("gameRequest").equals("TurnInfo")) {
 
-                showTurnInfo(jsonIncoming.getJSONObject("data"));
-            } else if (tempJson.get("gameRequest").equals("CycleEnd")) {
+                showTurnInfo(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("CycleEnd")) {
 
-                showEndCycle(jsonIncoming.getString("data"));
-            } else if (tempJson.get("gameRequest").equals("Result")) {
+                showEndCycle(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("Result")) {
 
-                processResult(jsonIncoming.getJSONObject("data"));
-            } else if (tempJson.get("gameRequest").equals("AllCards")) {
+                processResult(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("ShowAllCards")) {
 
-                showAllCards(jsonIncoming.getJSONObject("data"));
-            } else if (tempJson.get("gameRequest").equals("WaitForPlayersToBuy")) {
+                showAllCards((jsonIncoming));
+            }
+            else if (tempJson.get("gameRequest").equals("WaitForPlayersToBuy")) {
 
                 waitForPlayersToBuy();
-            } else if (tempJson.get("gameRequest").equals("LeaveGame")) {
+            }
+            else if (tempJson.get("gameRequest").equals("AddBoardCoinResponse")) {
+
+                addBoardCoinInGameResponse(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("LeaveGame")) {
 
                 leaveGameRoom();
 
@@ -438,7 +451,8 @@ public class ClientToServer extends JFrame {
                 joinGame.setText("Join");
                 addTextInGui("Leaving game");
             }
-        } else if (jsonIncoming.getString("requestType").equals("WaitingRoom")) {
+        }
+        else if (jsonIncoming.getString("requestType").equals("WaitingRoom")) {
 
             JSONObject tempJson = jsonIncoming.getJSONObject("waitingRoomData");
 
@@ -448,27 +462,34 @@ public class ClientToServer extends JFrame {
             if (tempJson.getString("requestType").equals("SetWaitingRoomData")) {
 
                 initiateWaitingRoom(jsonIncoming);
-            } else if (tempJson.getString("requestType").equals("JoinWaitingRoom")) {
+            }
+            else if (tempJson.getString("requestType").equals("JoinWaitingRoom")) {
 
                 showInvitationInfo(tempJson);
                 acceptWaitingRoomInvitation();
-            } else if (tempJson.getString("requestType").equals("JoinWaitingRoomResponse")) {
+            }
+            else if (tempJson.getString("requestType").equals("JoinWaitingRoomResponse")) {
 
                 showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("gameCode"), tempJson.getString("message"));
-            } else if (tempJson.getString("requestType").equals("RemoveFromWaitingRoomResponse")) {
+            }
+            else if (tempJson.getString("requestType").equals("RemoveFromWaitingRoomResponse")) {
 
                 String message = tempJson.getString("message");
                 removedFromWaitingRoom(message);
-            } else if (tempJson.getString("requestType").equals("AllRoomData")) {
+            }
+            else if (tempJson.getString("requestType").equals("AllRoomData")) {
 
                 loadWaitingRoomData(jsonIncoming);
-            } else if (tempJson.get("requestType").equals("AskJoinWaitingRoomByCodeResponse")) {
+            }
+            else if (tempJson.get("requestType").equals("AskJoinWaitingRoomByCodeResponse")) {
 
                 askJoinWaitingRoomByCodeResponse(jsonIncoming);
-            } else if (tempJson.get("requestType").equals("ApproveJoinByCodeRequest")) {
+            }
+            else if (tempJson.get("requestType").equals("ApproveJoinByCodeRequest")) {
 
                 approveJoinByCodeRequest(jsonIncoming);
-            } else if (tempJson.get("requestType").equals("StartGameResponse")) {
+            }
+            else if (tempJson.get("requestType").equals("StartGameResponse")) {
 
                 showStartGameResponse(jsonIncoming);
             }
@@ -617,6 +638,8 @@ public class ClientToServer extends JFrame {
     //=====================================================================================
 
 
+
+
     //=====================================================================================
     //
     //                  COIN ADDING FUNCTIONS
@@ -711,6 +734,8 @@ public class ClientToServer extends JFrame {
     //=====================================================================================
 
 
+
+
     //=====================================================================================
     //
     //                  JOIN/EXIT GAME FUNCTIONS
@@ -777,14 +802,6 @@ public class ClientToServer extends JFrame {
 
 
 
-
-
-    /*
-
-    BAAD
-
-     */
-
     private void requestExit() {
 
         sendExitRequest();
@@ -812,19 +829,22 @@ public class ClientToServer extends JFrame {
         send.put("gameData", tempJson);
 
         sendMessage(send.toString());
-
-
     }
 
     private void leaveGameRoom() {
 
         user.deInitializeGameData();
-        System.out.println(user);
     }
 
     //=====================================================================================
     //
     //=====================================================================================
+
+
+
+
+
+
 
 
     //=======================================================================================
@@ -895,13 +915,19 @@ public class ClientToServer extends JFrame {
         JSONArray array = jsonObject.getJSONArray("data");
         String req = jsonObject.getJSONObject("gameData").getString("gameRequest");
 
-        if (req.equals("LoadPlayerCards")) loc = 0;
-        else if (req.equals("LoadBoardCards")) loc = 1;
+        if (req.equals("LoadPlayerCards")) loc = 1;
+        else if (req.equals("LoadBoardCards")) loc = 0;
 
 
         ArrayList location;
-        if (loc == 0) location = user.getPlayerCards();
-        else location = user.getBoardCards();
+        if (loc == 1) {
+            location = user.getPlayerCards();
+            location.clear();
+        }
+        else {
+            location = user.getBoardCards();
+            if(array.length() == 0) location.clear();
+        }
 
         for (int i = 0; i < array.length(); i++) {
 
@@ -911,6 +937,8 @@ public class ClientToServer extends JFrame {
             location.add(card);
         }
     }
+
+
 
 
     //  BOTH OF THEM UNNECESSARY, SHOW BOARD INFO CALLED FROM
@@ -959,6 +987,8 @@ public class ClientToServer extends JFrame {
         addTextInGui(show);
     }
 
+
+
     //===================================================================================
     //
     //      GAME BUTTONS ENABLING
@@ -969,7 +999,7 @@ public class ClientToServer extends JFrame {
 
         JSONArray temp = JsonObject.getJSONArray("data");
 
-        String show = "";
+        String show = "Your current coin: " + user.getBoardCoin() + "\n";
 
         for (int i = 0; i < temp.length(); i++) {
 
@@ -984,26 +1014,31 @@ public class ClientToServer extends JFrame {
                 if (jsonObject.getString("blindType").equals("SmallBlind")) {
                     show += ", small blind, folding will cost " + user.getFoldCost();
 
-                } else if (jsonObject.getString("blindType").equals("BigBlind")) {
+                }
+                else if (jsonObject.getString("blindType").equals("BigBlind")) {
                     show += ", big blind, folding will cost " + user.getFoldCost();
 
                 }
                 show += "\n";
 
-            } else if (jsonObject.getString("name").equals("Call")) {
+            }
+            else if (jsonObject.getString("name").equals("Call")) {
 
                 show += "You can call, minimum value: " + user.getRoundCall() + "\n";
                 callButton.setEnabled(true);
-            } else if (jsonObject.getString("name").equals("Raise")) {
+            }
+            else if (jsonObject.getString("name").equals("Raise")) {
 
                 show += "You can raise, minimum value: " + user.getRoundCall() + "\n";
                 raiseButton.setEnabled(true);
                 textField.setEditable(true);
-            } else if (jsonObject.getString("name").equals("Check")) {
+            }
+            else if (jsonObject.getString("name").equals("Check")) {
 
                 show += "You can check\n";
                 checkButton.setEnabled(true);
-            } else if (jsonObject.getString("name").equals("AllIn")) {
+            }
+            else if (jsonObject.getString("name").equals("AllIn")) {
 
                 show += "You can go all in\n";
                 allInButton.setEnabled(true);
@@ -1026,6 +1061,9 @@ public class ClientToServer extends JFrame {
     //=================================================================================
 
 
+
+
+
     //=====================================================================================
     //
     //              GAMETHREAD OUTCOMING
@@ -1035,6 +1073,14 @@ public class ClientToServer extends JFrame {
 
     public void sendGameThreadCallRequest() {
 
+        user.setTotalCallCount(user.getTotalCallCount()+1);
+        user.setCallCount(user.getCallCount()+1);
+        user.setBoardCoin(user.getBoardCoin() - user.getRoundCall());
+        user.setCallValue(user.getRoundCall());
+        user.setTotalCallValue(user.getTotalCallValue() + user.getRoundCall());
+        user.setCall("Call");
+        user.setRoundCoins(user.getRoundCoins() + user.getRoundCall());
+
         JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
@@ -1042,18 +1088,8 @@ public class ClientToServer extends JFrame {
 
         JSONObject tempJson = new JSONObject();
 
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
         tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        //tempJson2.put("cost", minCallValue);
-
-        tempJson.put("callData", tempJson2);
+        tempJson.put("call", "Call");
 
         send.put("gameData", tempJson);
 
@@ -1062,6 +1098,24 @@ public class ClientToServer extends JFrame {
 
     public void sendGameThreadRaiseRequest(long value) {
 
+        //      RAISE COIN SLIDER BETWEEN
+        //      user.getRoundCall()     to      user.getBoardCoin()
+
+        if( !(value >= user.getRoundCall() && value <= user.getBoardCoin()) ){
+
+            addTextInGui("Invalid amount");
+            return ;
+        }
+
+        user.setTotalCallCount(user.getTotalCallCount()+1);
+        user.setRaiseCount(user.getRaiseCount()+1);
+        user.setBoardCoin(user.getBoardCoin()-value);
+        user.setCallValue(value);
+        user.setTotalCallValue(user.getTotalCallValue() + value);
+        user.setCall("Raise");
+        user.setRoundCoins(user.getRoundCoins() + value);
+        user.setRoundCall(value);
+
         JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
@@ -1069,25 +1123,25 @@ public class ClientToServer extends JFrame {
 
         JSONObject tempJson = new JSONObject();
 
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
         tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", value);
-
-        tempJson.put("callData", tempJson2);
+        tempJson.put("call", "Raise");
+        tempJson.put("cost", value);
 
         send.put("gameData", tempJson);
 
         sendMessage(send.toString());
     }
 
-    public void sendGameThreadAllInRequest(long value) {
+    public void sendGameThreadAllInRequest() {
+
+        user.setTotalCallCount(user.getTotalCallCount()+1);
+        user.setAllInCount(user.getAllInCount()+1);
+        user.setCallValue(user.getBoardCoin());
+        user.setTotalCallValue(user.getTotalCallValue()+user.getBoardCoin());
+        user.setCall("AllIn");
+        user.setRoundCoins(user.getRoundCoins()+user.getBoardCoin());
+        if(user.getBoardCoin() > user.getRoundCall()) user.setRoundCall(user.getBoardCoin());
+        user.setBoardCoin(0);
 
         JSONObject send = initiateJson();
 
@@ -1095,19 +1149,8 @@ public class ClientToServer extends JFrame {
         send.put("requestType", "GameThread");
 
         JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
         tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", value);
-
-        tempJson.put("callData", tempJson2);
+        tempJson.put("call", "AllIn");
 
         send.put("gameData", tempJson);
 
@@ -1116,25 +1159,18 @@ public class ClientToServer extends JFrame {
 
     public void sendGameThreadCheckRequest() {
 
+        user.setTotalCallCount(user.getTotalCallCount()+1);
+        user.setCheckCount(user.getCheckCount()+1);
+        user.setCall("Check");
+
         JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
         send.put("requestType", "GameThread");
 
         JSONObject tempJson = new JSONObject();
-
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
         tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", 0);
-
-        tempJson.put("callData", tempJson2);
+        tempJson.put("call", "Check");
 
         send.put("gameData", tempJson);
 
@@ -1143,6 +1179,227 @@ public class ClientToServer extends JFrame {
 
     public void sendGameThreadFoldRequest() {
 
+        user.setTotalCallCount(user.getTotalCallCount() + 1);
+        user.setFoldCount(user.getFoldCount()+1);
+        user.setBoardCoin(user.getBoardCoin() - user.getFoldCost());
+        user.setCall("Fold");
+        user.setRoundCoins(user.getRoundCoins() + user.getFoldCost());
+
+        JSONObject send = initiateJson();
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("call", "Fold");
+
+        send.put("gameData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+
+    private void showTurnInfo(JSONObject jsonObject) {
+
+        JSONObject temp = jsonObject.getJSONObject("data");
+
+        String username = temp.getString("username");
+        int seatPosition = temp.getInt("seatPosition");
+        String call = temp.getString("call");
+        long value = temp.getLong("value");
+
+        String show = username + " " + call + "ed with value " + value + ", seatPosition " + seatPosition;
+        addTextInGui(show);
+    }
+
+    //=====================================================================================
+    //
+    //
+    //=====================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //=====================================================================================
+    //
+    //              ROUND ENDING RELATED STUFF
+    //
+    //
+    //=====================================================================================
+
+    private void showEndCycle(JSONObject jsonObject) {
+
+        String msg = jsonObject.getString("data");
+        addTextInGui(msg);
+    }
+
+    private void showAllCards(JSONObject jsonObject) {
+
+        String show;
+        JSONObject data = jsonObject.getJSONObject("data");
+
+        JSONArray temp;
+
+        show = "All board cards: \n";
+        temp = data.getJSONArray("allBoardCards");
+
+        for (int i = 0; i < temp.length(); i++) show += temp.getString(i) + "\n";
+        show += "\n";
+
+
+        show += "All player cards: \n\n";
+        temp = data.getJSONArray("allPlayerCards");
+
+        for (int i = 0; i < temp.length(); i++) {
+
+            JSONObject tempObject = temp.getJSONObject(i);
+            JSONArray tempArray = tempObject.getJSONArray("cards");
+
+            show += "username: " + tempObject.getString("username") + " seat: " + tempObject.getInt("seatPosition") + "\n";
+            show += tempArray.getString(0) + "\n";
+            show += tempArray.getString(1) + "\n\n";
+        }
+
+        addTextInGui(show);
+    }
+
+
+    private void loadWinnerData(JSONObject jsonObject){
+
+        JSONObject data = jsonObject.getJSONObject("data");
+        JSONArray winnerData = data.getJSONArray("winnerData");
+
+        boolean showCardsAtEnd = data.getBoolean("showCards");
+        long winAmount = data.getLong("winAmount");
+
+        int kk = 0;
+        int winners[] = new int[user.getMaxPlayerCount()];
+        String[] results = new String[winnerData.length()];
+
+        for(int i=0; i<user.getMaxPlayerCount(); i++) winners[i] = 0;
+        for(int i=0; i<winnerData.length(); i++){
+
+            int k = winnerData.getJSONObject(i).getInt("seatPosition");
+            winners[k] = 1;
+            results[i] = winnerData.getJSONObject(i).getString("resultString");
+        }
+
+        for(int i=0; i<user.getMaxPlayerCount(); i++){
+
+            if(user.getInGamePlayers()[i] == null) continue;
+
+            User temp = user.getInGamePlayers()[i];
+            temp.setRoundsPlayed(temp.getRoundsPlayed() + 1);
+
+            if(winners[i] == 1){
+                temp.setRoundsWon(temp.getRoundsWon() + 1);
+                temp.setWinStreak(temp.getWinStreak() + 1);
+                temp.setCoinWon(temp.getCoinWon() + winAmount);
+                temp.setBiggestWin( max(temp.getBiggestWin() , winAmount) );
+                if(showCardsAtEnd) temp.setBestHand( Card.compareHand(temp.getBestHand(), results[kk]) );
+                temp.setBoardCoin(temp.getBoardCoin() + winAmount);
+
+                kk++;
+            }
+            else{
+                temp.setWinStreak(0);
+                temp.setCoinLost(temp.getCoinLost() + temp.getTotalCallValue());
+            }
+        }
+        User.loadOwnSelfFromInGamePlayers(user);
+    }
+
+    private void processResult(JSONObject jsonObject) {
+
+        loadWinnerData(jsonObject);
+
+        JSONObject data = jsonObject.getJSONObject("data");
+
+        String show = "\nWinners: ";
+
+        int winnerCount = data.getJSONArray("winnerData").length();
+        long winAmount = data.getLong("winAmount");
+
+
+        if (winnerCount == 0) {
+            addTextInGui("Everyone folded, no winners!");
+            return;
+        }
+
+        String[] winners = new String[winnerCount];
+        String[] winnerCards = new String[winnerCount];
+
+        for (int i = 0; i < winnerCount; i++) {
+
+            JSONObject temp = data.getJSONArray("winnerData").getJSONObject(i);
+
+            winners[i] = temp.getString("username");
+            winnerCards[i] = temp.getString("resultString");
+        }
+
+        boolean showCards = data.getBoolean("showCards");
+        show += "Winning amount each: " + winAmount;
+        show += winnerCount + " winners\n";
+
+        for (int i = 0; i < winnerCount; i++) {
+            show += winners[i];
+            show += "\n";
+
+            if (showCards == true) show += " -> " + Card.suitMessage(winnerCards[i], data.getInt("showWinLevel"));
+        }
+        if (winnerCount > 1) show += "\nTied between " + winnerCount + " players";
+
+        addTextInGui(show);
+    }
+
+    //======================================================================================
+    //
+    //======================================================================================
+
+
+
+
+
+
+
+    //======================================================================================
+    //
+    //              WAIT FOR PLAYERS
+    //              OR
+    //              WAIT FOR PLAYERS TO BUY COINS
+    //
+    //======================================================================================
+
+    private void waitForPlayersToBuy() {
+
+        disableGameButtons();
+
+        user.setGameRunning(false);
+
+        String show = "Waiting for players to buy coins" ;
+        addTextInGui(show);
+    }
+
+    private void sendAddBoardCoinInGameRequest(long value){
+
+        if(value > user.getCurrentCoin()) {
+            addTextInGui("Invalid Request");
+            return ;
+        }
+
         JSONObject send = initiateJson();
 
         send.put("username", user.getUsername());
@@ -1152,20 +1409,34 @@ public class ClientToServer extends JFrame {
 
         tempJson.put("gameId", gameThreadId);
         tempJson.put("gameCode", gameThreadCode);
-        tempJson.put("requestType", "GameCall");
-        tempJson.put("roundCount", roundCount);
-        tempJson.put("turnCount", turnCount);
-
-        JSONObject tempJson2 = new JSONObject();
-
-        tempJson2.put("call", call);
-        tempJson2.put("cost", foldCost);
-
-        tempJson.put("callData", tempJson2);
+        tempJson.put("requestType", "AddBoardCoin");
+        tempJson.put("amount", value);
 
         send.put("gameData", tempJson);
 
         sendMessage(send.toString());
+    }
+
+    private void addBoardCoinInGameResponse(JSONObject jsonObject){
+
+        JSONObject gameData = jsonObject.getJSONObject("gameData");
+        boolean success = gameData.getBoolean("success");
+        long amount = gameData.getLong("amount");
+
+        if(success){
+            user.setCurrentCoin(user.getCurrentCoin() - amount);
+            user.setBoardCoin(user.getBoardCoin() + amount);
+
+            tryStartCurrentGame();
+        }
+    }
+
+
+    private void tryStartCurrentGame(){
+
+        if(user.isInGame() == false) return ;
+        else if(user.isGameRunning() == true) return ;
+        else sendTryStartCurrentGameRequest();
     }
 
     private void sendTryStartCurrentGameRequest() {
@@ -1184,13 +1455,7 @@ public class ClientToServer extends JFrame {
         send.put("gameData", tempJson);
 
         sendMessage(send.toString());
-
     }
-
-    //=====================================================================================
-    //
-    //
-    //=====================================================================================
 
     //===================================================================================
     //
@@ -1253,61 +1518,6 @@ public class ClientToServer extends JFrame {
     //
     //
     //===============================================================================================================================
-
-    private void checkIfWon(int winnerCount, int winAmount, String[] winners) {
-
-        boolean didWin = false;
-
-        for (int i = 0; i < winnerCount; i++) {
-            if (winners[i].equals(user.getUsername())) {
-                didWin = true;
-                break;
-            }
-        }
-        if (didWin == false) return;
-        user.setCurrentCoin(user.getCurrentCoin() + winAmount);
-    }
-
-    private void processResult(JSONObject data) {
-
-
-        String show = "Winners: ";
-
-        int winnerCount = data.getJSONArray("winnerData").length();
-        int winAmount = data.getInt("winAmount");
-
-
-        if (winnerCount == 0) {
-            addTextInGui("Everyone folded, no winners!");
-            return;
-        }
-
-
-        String[] winners = new String[winnerCount];
-        String[] winnerCards = new String[winnerCount];
-
-        for (int i = 0; i < winnerCount; i++) {
-
-            JSONObject temp = data.getJSONArray("winnerData").getJSONObject(i);
-
-            winners[i] = temp.getString("username");
-            winnerCards[i] = temp.getString("resultString");
-        }
-        checkIfWon(winnerCount, winAmount, winners);
-
-        boolean showCards = data.getBoolean("showCards");
-
-        show += winnerCount + " winners\n";
-        for (int i = 0; i < winnerCount; i++) {
-            show += winners[i];
-            show += "\n";
-
-            if (showCards == true) show += " -> " + Card.suitMessage(winnerCards[i], data.getInt("showWinLevel"));
-        }
-        if (winnerCount > 1) show += "\nTied between " + winnerCount + " players";
-
-        addTextInGui(show);
-    }
 
     //====================================================================================
 
@@ -1663,7 +1873,7 @@ public class ClientToServer extends JFrame {
 
     private void infoUserClick() {
         curCommand = "UserInfo";
-        addTextInGui(user.toString());
+        addTextInGui(User.UserToJsonInGame(user).toString());
     }
 
     private void joinClick() {
@@ -1679,7 +1889,7 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        requestUpdateOwnInGame();
+        //requestUpdateOwnInGame();
 
         //addFreeCoinRequest();
 
@@ -1769,7 +1979,7 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        coinBuyRequest(v, "Bkash", "lol");
+                        sendAddBoardCoinInGameRequest(v);
 
                     }
                 }
@@ -1963,62 +2173,6 @@ public class ClientToServer extends JFrame {
         user.getBoardCards().clear();
     }
 
-    private void showTurnInfo(JSONObject temp) {
-
-        String username = temp.getString("username");
-        int seatPosition = temp.getInt("seatPosition");
-        String call = temp.getString("call");
-        int value = temp.getInt("value");
-
-        String show = username + " " + call + "ed with value " + value + ", seatPosition " + seatPosition;
-        addTextInGui(show);
-    }
-
-    private void showEndCycle(String msg) {
-
-        addTextInGui(msg);
-    }
-
-    private void showAllCards(JSONObject jsonObject) {
-
-        String show;
-        JSONArray temp;
-
-        show = "All board cards: \n";
-        temp = jsonObject.getJSONArray("allBoardCards");
-
-        for (int i = 0; i < temp.length(); i++) show += temp.getString(i) + "\n";
-        show += "\n";
-
-
-        show += "All player cards: \n\n";
-        temp = jsonObject.getJSONArray("allPlayerCards");
-
-        for (int i = 0; i < temp.length(); i++) {
-
-            JSONObject tempObject = temp.getJSONObject(i);
-            JSONArray tempArray = tempObject.getJSONArray("cards");
-
-            show += "username: " + tempObject.getString("username") + " seat: " + tempObject.getInt("seatPosition") + "\n";
-            show += tempArray.getString(0) + "\n";
-            show += tempArray.getString(1) + "\n\n";
-        }
-
-        addTextInGui(show);
-    }
-
-    private void waitForPlayersToBuy() {
-
-        disableGameButtons();
-
-        gameRunning = false;
-
-        String show = "Wait for players to buy coins -> " + gameRunning;
-        addTextInGui(show);
-
-    }
-
-
     //====================================================================================
     //
     //      GAME BUTTON ON CLICK FUNCTIONS
@@ -2050,13 +2204,14 @@ public class ClientToServer extends JFrame {
 
     private void clickedRaiseButton() {
 
-        int y = -1, temp;
+        long y = -1, temp;
 
         String str = textField.getText();
         textField.setText("");
 
         try {
-            temp = Integer.valueOf(str);
+            temp = Long.valueOf(str);
+            y = temp;
             //if (temp >= minCallValue && temp <= user.getCurrentCoin()) y = temp;
             //else addTextInGui("Integer must be between " + minCallValue + " " + user.getCurrentCoin());
         } catch (Exception e) {
@@ -2080,7 +2235,7 @@ public class ClientToServer extends JFrame {
         long v = user.getCurrentCoin();
 
         //user.setCurrentCoin(0);
-        sendGameThreadAllInRequest(v);
+        sendGameThreadAllInRequest();
     }
 
     private void clickedExitButton() {

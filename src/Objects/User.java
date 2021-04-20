@@ -91,7 +91,6 @@ public class User {
     private long callValue;              //      CALL VALUE OF THIS USER
     private long totalCallValue;        //      TOTAL CALL VALUE OF THIS USER
     private String call;                //      CALL FOR USER IN GAME
-    private int blindType;              //      BLIND TYPE FOR THIS USER
     private long foldCost;               //      FOLD COST FOR THIS USER
     private int cycleCount;             //      CYCLE COUNT OF GAME
     private int roundCount;             //      ROUND COUNT OF GAME
@@ -173,43 +172,137 @@ public class User {
         deInitializeInvitationData();
     }
 
-    public static JSONObject UserToJson(User user) {
 
-        JSONObject temp = new JSONObject();
 
-        temp.put("id", user.getId());
-        temp.put("username", user.getUsername());
-        temp.put("DOB", user.getDOB());
-        temp.put("age", user.getAge());
-        temp.put("fb_id", user.getFb_id());
-        temp.put("gmail_id", user.getGmail_id());
-        temp.put("loginMethod", user.getLoginMethod());
-        temp.put("exp", user.getExp());
-        temp.put("currentCoin", user.getCurrentCoin());
-        temp.put("coinWon", user.getCoinWon());
-        temp.put("coinLost", user.getCoinLost());
-        temp.put("roundsWon", user.getRoundsWon());
-        temp.put("roundsPlayed", user.getRoundsPlayed());
-        temp.put("winPercentage", user.getWinPercentage());
-        temp.put("winStreak", user.getWinStreak());
-        temp.put("level", user.getLevel());
-        temp.put("rank", user.getRank());
-        temp.put("totalCallCount", user.getTotalCallCount());
-        temp.put("callCount", user.getCallCount());
-        temp.put("raiseCount", user.getRaiseCount());
-        temp.put("foldCount", user.getFoldCount());
-        temp.put("allInCount", user.getAllInCount());
-        temp.put("checkCount", user.getCheckCount());
-        temp.put("coinVideoCount", user.getCoinVideoCount());
-        temp.put("lastCoinVideoAvailableTime", user.getLastCoinVideoAvailableTime());
-        temp.put("lastLoggedInTime", user.getLastLoggedInTime());
-        temp.put("lastFreeCoinTime", user.getLastFreeCoinTime());
-        temp.put("currentLoginTime", user.getCurrentLoginTime());
-        temp.put("biggestWin", user.biggestWin);
-        temp.put("bestHand", user.bestHand);
 
-        return temp;
+
+
+
+    public void initializeGameData(int gameId, int gameCode, String boardType, long minEntryValue, long minCallValue, int owner_id, int seatPosition, long boardCoin) {
+
+        playerCards.clear();
+        boardCards.clear();
+
+        this.gameId = gameId;
+        this.gameCode = gameCode;
+        this.boardType = boardType;
+        this.minEntryValue = minEntryValue;
+        this.minCallValue = minCallValue;
+        this.owner_id = owner_id;
+        this.seatPosition = seatPosition;
+
+        this.boardCoin = boardCoin;
+        currentCoin = currentCoin - boardCoin;
     }
+
+    public void joinedAGame(int gameId, int gameCode, int owner_id, int seatPosition, int maxPlayerCount, int playerCount) {
+
+        this.playerCount = playerCount;
+        this.maxPlayerCount = maxPlayerCount;
+        inGamePlayers = new User[maxPlayerCount];
+
+        inGame = true;
+        this.gameId = gameId;
+        this.gameCode = gameCode;
+        this.owner_id = owner_id;
+        this.seatPosition = seatPosition;
+    }
+
+    public void deInitializeGameData() {
+
+        if(inGame == true) setExp(getExp() + expIncrease);
+
+        if(inGame == true && gameRunning == true){
+
+            if(seatPosition == roundIteratorSeat) {
+                boardCoin -= foldCost;
+                totalCallValue += foldCost;
+            }
+            else if(seatPosition == smallBlindSeat && foldCost > 0) {
+                boardCoin -= foldCost/2;
+                totalCallValue += foldCost/2;
+            }
+            totalCallCount++;
+            foldCount++;
+            winStreak = 0;
+
+            setRoundsPlayed(getRoundsPlayed() + 1);
+            setCoinLost(getCoinLost() + totalCallValue);
+        }
+
+        inGame = false;
+        playerCards = new ArrayList<Card>();
+        boardCards = new ArrayList<Card>();
+
+        playerCount = -1;
+        maxPlayerCount = -1;
+        inGamePlayers = null;
+
+        gameId = -1;
+        gameCode = -1;
+        boardType = "";
+        minEntryValue = -1;
+        minCallValue = -1;
+        owner_id = -1;
+        seatPosition = -1;
+
+        currentCoin = currentCoin + boardCoin;
+        boardCoin = 0;
+        foldCost = 0;
+        cycleCount = 0;
+        roundCount = 0;
+        turnCount = 0;
+        call = "";
+
+        roundCoins = 0;
+        roundCall = 0;
+        roundIteratorSeat = -1;
+        roundStarterSeat = -1;
+        smallBlindSeat = -1;
+        bigBlindSeat = -1;
+
+        totalCallValue = 0;
+        callValue = 0;
+
+        gameRunning = false;
+    }
+
+
+
+
+
+    public void initializeInvitationData(int tempId, int tempCode, String tempBoardType, long tempMinEntryValue, long tempMinCallValue) {
+
+        this.tempId = tempId;
+        this.tempCode = tempCode;
+        this.tempMinCallValue = tempMinCallValue;
+        this.tempMinEntryValue = tempMinEntryValue;
+        this.tempBoardType = tempBoardType;
+    }
+
+    public void deInitializeInvitationData() {
+
+        tempId = -1;
+        tempCode = -1;
+        tempMinEntryValue = 0;
+        tempMinCallValue = 0;
+        tempBoardType = "";
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
     public static void loadOwnSelfFromInGamePlayers(User user) {
 
@@ -255,6 +348,44 @@ public class User {
         user.totalCallValue = data.totalCallValue;
     }
 
+    public static JSONObject UserToJson(User user) {
+
+        JSONObject temp = new JSONObject();
+
+        temp.put("id", user.getId());
+        temp.put("username", user.getUsername());
+        temp.put("DOB", user.getDOB());
+        temp.put("age", user.getAge());
+        temp.put("fb_id", user.getFb_id());
+        temp.put("gmail_id", user.getGmail_id());
+        temp.put("loginMethod", user.getLoginMethod());
+        temp.put("exp", user.getExp());
+        temp.put("currentCoin", user.getCurrentCoin());
+        temp.put("coinWon", user.getCoinWon());
+        temp.put("coinLost", user.getCoinLost());
+        temp.put("roundsWon", user.getRoundsWon());
+        temp.put("roundsPlayed", user.getRoundsPlayed());
+        temp.put("winPercentage", user.getWinPercentage());
+        temp.put("winStreak", user.getWinStreak());
+        temp.put("level", user.getLevel());
+        temp.put("rank", user.getRank());
+        temp.put("totalCallCount", user.getTotalCallCount());
+        temp.put("callCount", user.getCallCount());
+        temp.put("raiseCount", user.getRaiseCount());
+        temp.put("foldCount", user.getFoldCount());
+        temp.put("allInCount", user.getAllInCount());
+        temp.put("checkCount", user.getCheckCount());
+        temp.put("coinVideoCount", user.getCoinVideoCount());
+        temp.put("lastCoinVideoAvailableTime", user.getLastCoinVideoAvailableTime());
+        temp.put("lastLoggedInTime", user.getLastLoggedInTime());
+        temp.put("lastFreeCoinTime", user.getLastFreeCoinTime());
+        temp.put("currentLoginTime", user.getCurrentLoginTime());
+        temp.put("biggestWin", user.biggestWin);
+        temp.put("bestHand", user.bestHand);
+
+        return temp;
+    }
+
     public static void loadGameRoomData(User user, JSONObject jsonObject) {
 
         JSONObject data = jsonObject.getJSONObject("data");
@@ -276,29 +407,6 @@ public class User {
         user.call = data.getString("call");
         user.callValue = data.getLong("callValue");
         user.totalCallValue = data.getLong("totalCallValue");
-    }
-
-    public static long getExpIncrease() {
-        return expIncrease;
-    }
-
-    public static long[] getRanksValue() {
-        return ranksValue;
-    }
-
-    //============================================================================
-    //              CONSTRUCTING DONE
-    //============================================================================
-
-
-    //============================================================================
-    //
-    //              CONSTRUCTING THROUGH JSON
-    //
-    //============================================================================
-
-    public static String[] getRankString() {
-        return rankString;
     }
 
     public static User JSONToUser(JSONObject temp) {
@@ -433,7 +541,7 @@ public class User {
         temp.put("lastLoggedInTime", user.getLastLoggedInTime());
         temp.put("lastFreeCoinTime", user.getLastFreeCoinTime());
         temp.put("currentLoginTime", user.getCurrentLoginTime());
-        temp.put("biggestWin", user.getBigBlindSeat());
+        temp.put("biggestWin", user.getBiggestWin());
         temp.put("bestHand", user.getBestHand());
 
         temp.put("gameRunning", user.gameRunning);
@@ -454,36 +562,21 @@ public class User {
         return temp;
     }
 
-    public void initializeGameData(int gameId, int gameCode, String boardType, long minEntryValue, long minCallValue, int owner_id, int seatPosition, long boardCoin) {
+    //============================================================================
+    //              CONSTRUCTING DONE
+    //============================================================================
 
-        playerCards.clear();
-        boardCards.clear();
 
-        this.gameId = gameId;
-        this.gameCode = gameCode;
-        this.boardType = boardType;
-        this.minEntryValue = minEntryValue;
-        this.minCallValue = minCallValue;
-        this.owner_id = owner_id;
-        this.seatPosition = seatPosition;
 
-        this.boardCoin = boardCoin;
-        currentCoin = currentCoin - boardCoin;
-    }
 
-    public void joinedAGame(int gameId, int gameCode, int owner_id, int seatPosition, int maxPlayerCount, int playerCount) {
 
-        this.playerCount = playerCount;
-        this.maxPlayerCount = maxPlayerCount;
-        this.maxPlayerCount = maxPlayerCount;
-        inGamePlayers = new User[maxPlayerCount];
 
-        inGame = true;
-        this.gameId = gameId;
-        this.gameCode = gameCode;
-        this.owner_id = owner_id;
-        this.seatPosition = seatPosition;
-    }
+
+
+
+
+
+
 
 
     //============================================================================
@@ -491,8 +584,6 @@ public class User {
     //          NECESSARY FUNCTIONS
     //
     //============================================================================
-
-
 
     public static String getRank(long coins_won, long coins_lost) {
 
@@ -611,11 +702,26 @@ public class User {
     //============================================================================
 
 
+
+
+
+
+
+
+
+
+
+
+
     //============================================================================
     //
     //          GETTERS AND SETTERS
     //
     //============================================================================
+
+    public static String[] getRankString() {
+        return rankString;
+    }
 
     public String getUsername() {
         return username;
@@ -623,64 +729,6 @@ public class User {
 
     public void setUsername(String username) {
         this.username = username;
-    }
-
-    public void deInitializeGameData() {
-
-        playerCards = new ArrayList<Card>();
-        boardCards = new ArrayList<Card>();
-
-        inGame = false;
-        playerCount = -1;
-        maxPlayerCount = -1;
-        inGamePlayers = null;
-
-        gameId = -1;
-        gameCode = -1;
-        boardType = "";
-        minEntryValue = -1;
-        minCallValue = -1;
-        owner_id = -1;
-        seatPosition = -1;
-
-        currentCoin = currentCoin + boardCoin;
-        boardCoin = 0;
-        foldCost = 0;
-        cycleCount = 0;
-        roundCount = 0;
-        turnCount = 0;
-        call = "";
-
-        roundCoins = 0;
-        roundCall = 0;
-        roundIteratorSeat = -1;
-        roundStarterSeat = -1;
-        smallBlindSeat = -1;
-        bigBlindSeat = -1;
-
-        totalCallValue = 0;
-        callValue = 0;
-        blindType = 0;
-
-        gameRunning = false;
-    }
-
-    public void initializeInvitationData(int tempId, int tempCode, String tempBoardType, long tempMinEntryValue, long tempMinCallValue) {
-
-        this.tempId = tempId;
-        this.tempCode = tempCode;
-        this.tempMinCallValue = tempMinCallValue;
-        this.tempMinEntryValue = tempMinEntryValue;
-        this.tempBoardType = tempBoardType;
-    }
-
-    public void deInitializeInvitationData() {
-
-        tempId = -1;
-        tempCode = -1;
-        tempMinEntryValue = 0;
-        tempMinCallValue = 0;
-        tempBoardType = "";
     }
 
     public int getId() {
@@ -705,6 +753,14 @@ public class User {
 
     public void setAge(int age) {
         this.age = age;
+    }
+
+    public static long getExpIncrease() {
+        return expIncrease;
+    }
+
+    public static long[] getRanksValue() {
+        return ranksValue;
     }
 
     public int getMaxPlayerCount() {
@@ -1064,14 +1120,6 @@ public class User {
         this.call = call;
     }
 
-    public int getBlindType() {
-        return blindType;
-    }
-
-    public void setBlindType(int blindType) {
-        this.blindType = blindType;
-    }
-
     public long getFoldCost() {
         return foldCost;
     }
@@ -1255,7 +1303,6 @@ public class User {
                 ", callValue=" + callValue +
                 ", totalCallValue=" + totalCallValue +
                 ", call='" + call + '\'' +
-                ", blindType=" + blindType +
                 ", foldCost=" + foldCost +
                 ", cycleCount=" + cycleCount +
                 ", roundCount=" + roundCount +

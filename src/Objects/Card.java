@@ -943,6 +943,73 @@ public class Card implements Comparable<Card> {
         else return false;
     }
 
+    public static int handToInt(String hand){
+
+        //              9   ---->   royal flush
+        //              8   ---->   straight flush
+        //              7   ---->   four of a kind
+        //              6   ---->   full house
+        //              5   ---->   flush
+        //              4   ---->   straight
+        //              3   ---->   three of a kind
+        //              2   ---->   two pair
+        //              1   ---->   one pair
+        //              0   ---->   high card
+
+        if(hand.equals("Royal Flush")) return  9;
+        else if(hand.equals("Straight Flush")) return 8;
+        else if(hand.equals("Four Of A Kind")) return 7;
+        else if(hand.equals("Full House")) return 6;
+        else if(hand.equals("Flush")) return 5;
+        else if(hand.equals("Straight")) return 4;
+        else if(hand.equals("Three Of A Kind")) return 3;
+        else if(hand.equals("Two Pair")) return 2;
+        else if(hand.equals("One Pair")) return 1;
+        else if(hand.equals("High Card")) return 0;
+        else return -1;
+
+    }
+
+    public static String intToHand(int k){
+
+
+        //              9   ---->   royal flush
+        //              8   ---->   straight flush
+        //              7   ---->   four of a kind
+        //              6   ---->   full house
+        //              5   ---->   flush
+        //              4   ---->   straight
+        //              3   ---->   three of a kind
+        //              2   ---->   two pair
+        //              1   ---->   one pair
+        //              0   ---->   high card
+
+        if(k == 9) return "Royal Flush";
+        else if(k == 8) return "Straight Flush";
+        else if(k == 7) return "Four Of A Kind";
+        else if(k == 6) return "Full House";
+        else if(k == 5) return "Flush";
+        else if(k == 4) return "Straight";
+        else if(k == 3) return "Three Of A Kind";
+        else if(k == 2) return "Two Pair";
+        else if(k == 1) return "One Pair";
+        else if(k == 0) return "High Card";
+        else return "";
+
+    }
+
+    public static String compareHand(String hand, String power){
+
+        int a, b;
+        int r;
+
+        a = handToInt(hand);
+        b = Integer.valueOf( power.split("\\.")[0] ) ;
+        r = max(a,b);
+
+        return intToHand(r);
+    }
+
     @Override
     public boolean equals(Object obj) {
 
