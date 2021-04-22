@@ -1549,8 +1549,6 @@ public class ClientToServer extends JFrame {
         show += "Enter entry amount: " ;
 
         addTextInGui(show);
-
-        sendJoinAmount(200000);
     }
 
     private void sendJoinAmount(long value){
@@ -1659,8 +1657,6 @@ public class ClientToServer extends JFrame {
         String username = tempUser.getUsername();
 
         addTextInGui(msg);
-
-        approveJoinRequest(username);
     }
 
 
@@ -1826,6 +1822,26 @@ public class ClientToServer extends JFrame {
     //=================================================================================
     //
     //=================================================================================
+
+
+
+
+
+
+
+
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+
+
+
+
 
 
 
