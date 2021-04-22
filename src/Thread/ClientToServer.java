@@ -489,6 +489,10 @@ public class ClientToServer extends JFrame {
 
                 showPlayersData(jsonIncoming);
             }
+            else if(tempJson.get("requestType").equals("EditBoardCoinResponse")){
+
+                editBoardCoinInWaitingRoomResponse(jsonIncoming);
+            }
         }
 
     }
@@ -1407,8 +1411,6 @@ public class ClientToServer extends JFrame {
 
         JSONObject tempJson = new JSONObject();
 
-        tempJson.put("gameId", gameThreadId);
-        tempJson.put("gameCode", gameThreadCode);
         tempJson.put("requestType", "AddBoardCoin");
         tempJson.put("amount", value);
 
@@ -1657,6 +1659,8 @@ public class ClientToServer extends JFrame {
         String username = tempUser.getUsername();
 
         addTextInGui(msg);
+
+        approveJoinRequest(username);
     }
 
 
@@ -1679,6 +1683,53 @@ public class ClientToServer extends JFrame {
 
         send.put("waitingRoomData", tempJson);
         sendMessage(send.toString());
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+    //=================================================================================
+    //
+    //          ADD BOARD COIN IN WAITING ROOM
+    //
+    //=================================================================================
+
+    private void sendEditBoardCoinInWaitingRoomRequest(long value){
+
+        if(value > user.getCurrentCoin() + user.getBoardCoin()) {
+            addTextInGui("Invalid Request");
+            return ;
+        }
+
+        JSONObject send = initiateJson();
+
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("requestType", "EditBoardCoin");
+        tempJson.put("amount", value);
+
+        send.put("waitingRoomData", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void editBoardCoinInWaitingRoomResponse(JSONObject jsonObject){
+
+        JSONObject waitingRoomData = jsonObject.getJSONObject("waitingRoomData");
+        boolean success = waitingRoomData.getBoolean("success");
+        long boardCoin = waitingRoomData.getLong("boardCoin");
+        long currentCoin = waitingRoomData.getLong("currentCoin");
+
+        if(success){
+            user.setCurrentCoin(currentCoin);
+            user.setBoardCoin(boardCoin);
+        }
     }
 
     //=================================================================================
@@ -1899,7 +1950,6 @@ public class ClientToServer extends JFrame {
     }
 
     private void inviteButtonClick() {
-
 
     }
 
