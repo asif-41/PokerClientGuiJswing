@@ -361,6 +361,7 @@ public class ClientToServer extends JFrame {
 
             requestAbortResponse(jsonIncoming);
         }
+
         else if (jsonIncoming.get("requestType").equals("UpdateOwnResponse")) {
 
             loadUpdateOwnResponse(jsonIncoming);
@@ -456,44 +457,38 @@ public class ClientToServer extends JFrame {
 
             JSONObject tempJson = jsonIncoming.getJSONObject("waitingRoomData");
 
-            System.out.println("Waiting room er info ashchhe");
-            System.out.println(jsonIncoming);
+            if(tempJson.get("requestType").equals("CreateWaitingRoomResponse")){
 
-            if (tempJson.getString("requestType").equals("SetWaitingRoomData")) {
-
-                initiateWaitingRoom(jsonIncoming);
+                createWaitingRoomResponse(jsonIncoming);
             }
-            else if (tempJson.getString("requestType").equals("JoinWaitingRoom")) {
+            else if(tempJson.get("requestType").equals("AskBoardCoin")){
 
-                showInvitationInfo(tempJson);
-                acceptWaitingRoomInvitation();
+                askBoardCoin(jsonIncoming);
             }
-            else if (tempJson.getString("requestType").equals("JoinWaitingRoomResponse")) {
+            else if(tempJson.get("requestType").equals("InitializeUser")){
 
-                showWaitingRoomJoinResponse(tempJson.getBoolean("success"), tempJson.getInt("gameCode"), tempJson.getString("message"));
+                initializeWaitingRoomData(jsonIncoming);
             }
-            else if (tempJson.getString("requestType").equals("RemoveFromWaitingRoomResponse")) {
-
-                String message = tempJson.getString("message");
-                removedFromWaitingRoom(message);
-            }
-            else if (tempJson.getString("requestType").equals("AllRoomData")) {
-
-                loadWaitingRoomData(jsonIncoming);
-            }
-            else if (tempJson.get("requestType").equals("AskJoinWaitingRoomByCodeResponse")) {
+            else if(tempJson.get("requestType").equals("AskJoinWaitingRoomByCodeResponse")) {
 
                 askJoinWaitingRoomByCodeResponse(jsonIncoming);
             }
-            else if (tempJson.get("requestType").equals("ApproveJoinByCodeRequest")) {
+            else if(tempJson.get("requestType").equals("AskApproveJoinRequest")) {
 
-                approveJoinByCodeRequest(jsonIncoming);
+                askApproveJoinRequest(jsonIncoming);
             }
-            else if (tempJson.get("requestType").equals("StartGameResponse")) {
+            else if(tempJson.get("requestType").equals("RemoveFromWaitingRoomResponse")) {
+
+                removedFromWaitingRoom(jsonIncoming);
+            }
+            else if(tempJson.get("requestType").equals("StartGameResponse")) {
 
                 showStartGameResponse(jsonIncoming);
             }
+            else if(tempJson.get("requestType").equals("LoadPlayersData")){
 
+                showPlayersData(jsonIncoming);
+            }
         }
 
     }
@@ -557,6 +552,8 @@ public class ClientToServer extends JFrame {
     }
 
 
+
+
     private void requestUpdateOwn() {
 
         JSONObject send = initiateJson();
@@ -586,6 +583,7 @@ public class ClientToServer extends JFrame {
 
         if (response) user = User.JSONToUserInGame(jsonObject.getJSONObject("data"));
     }
+
 
 
 
@@ -732,6 +730,8 @@ public class ClientToServer extends JFrame {
     //=====================================================================================
     //
     //=====================================================================================
+
+
 
 
 
@@ -1457,329 +1457,139 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
-    //===================================================================================
+    //==================================================================================
     //
-    //      showCards:
-    //
-    //          SHOWS LOADED BOARD CARDS, PLAYER CARDS IN GUI
-    //
-    //          BOARD CARDS COME FROM SERVER ONE BY ONE IN EACH TURN
-    //          TO ENSURE GAME SECURITY
-    //
-    //      decodeCards:
-    //
-    //          LOADS CARDS IN USER OBJECTS FROM DATA CAME FROM SERVER
-    //
-    //          CARD VALUES CAME WITH ACTUAL VALUE
-    //              BUT WE MAKE CARDS WITH SUIT RANGE 0-3, VALUE RANGE 0-12
-    //              WHERE AS ACTUAL RANGE IN CARD OBJECT IS 1-4, VALUE RANGE 2-14
-    //
-    //===================================================================================
-
     //==================================================================================
 
 
-    //==================================================================================
-    //
-    //          CHECK IF SERVER SIDE COIN, CLIENT COIN MATCHES
-    //          AT START OF EVERY ROUND
-    //
-    //==================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
 
 
     //=================================================================================
-
-
-    //==============================================================================================================================
     //
-    //      RESULTS CAME, CHECK IF THIS USER WON
+    //          WAITING ROOM
     //
-    //      ALSO USE THE STRING TO GENERATE RESULT MESSAGE
-    //
-    //
-    //      RESULT STRING(INPUT OF processResultString):
-    //
-    //      2 20000 ASIF 3.(7,3,1).(7,2,0).(7,1,0).(13,4,0).(11,1,0) ASIF2 3.(7,3,1).(7,2,0).(7,1,0).(13,4,0).(11,1,0) true 3
-    //
-    //      2           ->   WINNER COUNT
-    //
-    //      20000       ->   COIN WON BY EACH USER
-    //
-    //      ASIF        ->   FIRST WINNER WITH POWER STRING     ->    3.(7,3,1).(7,2,0).(7,1,0).(13,4,0).(11,1,0)
-    //
-    //      ASIF2       ->   SECOND WINNER WITH POWER STRING    ->    3.(7,3,1).(7,2,0).(7,1,0).(13,4,0).(11,1,0)
-    //
-    //      true        ->   SHOW RESULT CARDS
-    //                       DONT SHOW IF OTHERWISE         IF EVERYONE FOLDS EXCEPT ONE PLAYER OR SOME OTHER CASE
-    //
-    //      3           ->   WINNER FOUND AT LEVEL 3
-    //                       MEANS WINNER WAS FOUND AT 3RD KEY
-    //                       WHILE ITERATING THE POWER STRING
-    //
-    //
-    //===============================================================================================================================
-
-    //====================================================================================
+    //=================================================================================
 
 
 
-
-
-    //===================================================================================
+    //=================================================================================
     //
-    //              GUI ON CLICK BUTTONS
+    //          CREATE WAITING ROOM
     //
-    //===================================================================================
+    //=================================================================================
 
-    //=====================================================================================
-    //      REQUESTS FRIENDLIST TO SERVER
-    //
-    //      SAVE FRIENDLIST FROM SERVER WHEN LOGGING IN
-    //      THEN IF ANY CHANGE MADE, SEND DATA TO SERVER
-    //
-    //=====================================================================================
+    private void createWaitingRoom(String boardType, long minEntryValue, long minCallValue){
 
+        // OWNER ER CURRENT COIN minEntryValue
+        // ER BESHI HOILEI CREATE KORTE PARBE
 
-    //====================================================================================
-    //      REQUEST TO JOIN A GAME
-    //
-    //
-    //===================================================================================
-
-    private void createWaitingRoom(ArrayList<String> friends, String boardName, int minEntryCoin, int entryCoin) {
-
-        sendCreateWaitingRoomRequest(friends, boardName, minEntryCoin, entryCoin);
+        sendCreateWaitingRoomRequest(boardType, minEntryValue, minCallValue);
     }
 
-    private void loadWaitingRoomData(JSONObject temp) {
-
-        showWaitingRoomData(temp);
-    }
-
-    private void addInWaitingRoom(ArrayList<String> friends) {
-
-        sendAddInWaitingRoomRequest(friends);
-    }
-
-    private void removeFromWaitingRoom(ArrayList<String> friends) {
-
-        sendRemoveFromWaitingRoomRequest(friends);
-    }
-
-    private void requestExitFromWaitingRoom() {
-
-        sendRequestExitFromWaitingRoom();
-        removedFromWaitingRoom(null);
-        //Then exit
-    }
-
-    private void startGameFromWaitingRoom() {
-
-        sendStartGameRequest();
-    }
-
-    private void showInvitationInfo(JSONObject data) {
-
-        tempCode = data.getInt("gameCode");
-        tempBoard = data.getString("boardType");
-        tempEntryValue = data.getInt("minEntryAmount");
-        tempMinCallValue = data.getInt("minCallValue");
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-
-                tempCode = -1;
-                tempBoard = "";
-                tempEntryValue = 0;
-                tempMinCallValue = 0;
-
-            }
-        }, 10000);
-
-        addTextInGui(data.toString());
-    }
-
-    private void acceptWaitingRoomInvitation() {
-
-        if (tempCode == -1) return;
-        sendWaitingRoomInvitationAccept();
-    }
-
-    private void joinWaitingRoomByCode(int code) {
-
-        sendJoinWaitingRoomByCodeRequest(code);
-    }
-
-    private void askJoinWaitingRoomByCodeResponse(JSONObject temp) {
-
-        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
-
-        boolean asking = waitingRoomData.getBoolean("success");
-        String msg = waitingRoomData.getString("message");
-
-        addTextInGui(msg);
-
-    }
-
-    private void removedFromWaitingRoom(String msg) {
-
-        deinitiateWaitingRoom();
-        if (msg != null) addTextInGui(msg);
-    }
-
-    private void approveJoinByCodeRequest(JSONObject temp) {
-
-        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
-
-        String username = waitingRoomData.getString("username");
-        String msg = waitingRoomData.getString("message");
-
-        addTextInGui(msg);
-
-        ArrayList tempUser = new ArrayList<String>();
-        tempUser.add(username);
-
-        addInWaitingRoom(tempUser);
-
-    }
-
-    //===========================================================================================
-    //
-    //===========================================================================================
-
-    private void deinitiateWaitingRoom() {
-
-        owner = "";
-
-        gameThreadId = -1;
-        gameThreadCode = -1;
-        roomEntryValue = -1;
-        gameRoomType = "";
-        user.setSeatPosition(-1);
-    }
-
-    private void initiateWaitingRoom(JSONObject temp) {
-
-        owner = temp.getString("owner");
-
-        JSONObject tempJson = temp.getJSONObject("waitingRoomData");
-
-        gameThreadId = tempJson.getInt("gameId");
-        gameThreadCode = tempJson.getInt("gameCode");
-        roomEntryValue = tempJson.getInt("userEntryAmount");
-        gameRoomType = tempJson.getString("boardType");
-        user.setSeatPosition(tempJson.getInt("seatPosition"));
-    }
-
-    private void sendCreateWaitingRoomRequest(ArrayList<String> friends, String boardName, int minEntryCoin, int entryCoin) {
+    private void sendCreateWaitingRoomRequest(String boardType, long minEntryValue, long minCallValue) {
 
         JSONObject send = initiateJson();
 
-        send.put("owner", user.getUsername());
+        send.put("ownerId", user.getId());
         send.put("requestType", "WaitingRoom");
 
         JSONObject tempJson = new JSONObject();
 
         tempJson.put("requestType", "Create");
-        tempJson.put("gameId", user.getGameId());
-        tempJson.put("gameCode", user.getGameCode());
-        tempJson.put("boardType", boardName);
-        tempJson.put("entryAmount", minEntryCoin);
-        tempJson.put("userEntryAmount", entryCoin);
 
-        JSONArray tempJson2 = new JSONArray();
-
-        for (int i = 0; i < friends.size(); i++) tempJson2.put(friends.get(i));
-        tempJson.put("roomData", tempJson2);
+        tempJson.put("boardType", boardType);
+        tempJson.put("minEntryValue", minEntryValue);
+        tempJson.put("minCallValue", minCallValue);
 
         send.put("waitingRoomData", tempJson);
         sendMessage(send.toString());
     }
 
-    private void sendWaitingRoomInvitationAccept() {
+    private void createWaitingRoomResponse(JSONObject jsonObject){
 
-        JSONObject send = initiateJson();
-
-        send.put("requestType", "WaitingRoom");
-
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("requestType", "AcceptInvitation");
-        tempJson.put("gameCode", tempCode);
-        tempJson.put("boardType", tempBoard);
-        tempJson.put("userEntryAmount", 0);
-
-        send.put("waitingRoomData", tempJson);
-
-        System.out.println("Accept kortese");
-        System.out.println(send.toString());
-        sendMessage(send.toString());
+        String message = jsonObject.getString("data");
+        addTextInGui(message);
     }
 
-    private void showWaitingRoomJoinResponse(boolean succes, int code, String msg) {
 
-        String show;
+    //=================================================================================
+    //
+    //=================================================================================
 
-        show = msg + "\n";
-        show += "Room code " + code;
+
+
+
+
+    //=================================================================================
+    //
+    //          JOIN REQUESTS
+    //
+    //=================================================================================
+
+    private void askBoardCoin(JSONObject jsonObject){
+
+        JSONObject waitingRoomData = jsonObject.getJSONObject("waitingRoomData");
+
+        long minEntryValue = waitingRoomData.getLong("minEntryValue");
+        long minCallValue = waitingRoomData.getLong("minCallValue");
+
+        String show = "Min entry value " + minEntryValue + " min call value " + minCallValue + "\n";
+        show += "Enter entry amount: " ;
 
         addTextInGui(show);
+
+        sendJoinAmount(200000);
     }
 
-    private void sendAddInWaitingRoomRequest(ArrayList<String> friends) {
+    private void sendJoinAmount(long value){
 
         JSONObject send = initiateJson();
-
-        send.put("owner", user.getUsername());
         send.put("requestType", "WaitingRoom");
 
         JSONObject tempJson = new JSONObject();
 
-        tempJson.put("requestType", "AddInWaitingRoom");
-
-        JSONArray tempJson2 = new JSONArray();
-
-        for (int i = 0; i < friends.size(); i++) tempJson2.put(friends.get(i));
-        tempJson.put("roomData", tempJson2);
+        tempJson.put("requestType", "JoinAmount");
+        tempJson.put("amount", value);
 
         send.put("waitingRoomData", tempJson);
         sendMessage(send.toString());
     }
 
-    private void sendRemoveFromWaitingRoomRequest(ArrayList<String> friends) {
 
-        JSONObject send = initiateJson();
+    private void initializeWaitingRoomData(JSONObject jsonObject){
 
-        send.put("owner", user.getUsername());
-        send.put("requestType", "WaitingRoom");
+        JSONObject waitingRoomData = jsonObject.getJSONObject("waitingRoomData");
 
-        JSONObject tempJson = new JSONObject();
+        int id = waitingRoomData.getInt("gameId");
+        int code = waitingRoomData.getInt("gameCode");
+        String boardType = waitingRoomData.getString("boardType");
+        long minEntryValue = waitingRoomData.getLong("minEntryValue");
+        long minCallValue = waitingRoomData.getLong("minCallValue");
+        long boardCoin = waitingRoomData.getLong("boardCoin");
+        int seatPosition = waitingRoomData.getInt("seatPosition");
+        int owner_id = waitingRoomData.getInt("ownerId");
+        int maxPlayerCount = waitingRoomData.getInt("maxPlayerCount");
 
-        tempJson.put("requestType", "RemoveFromWaitingRoom");
-
-        JSONArray tempJson2 = new JSONArray();
-
-        for (int i = 0; i < friends.size(); i++) tempJson2.put(friends.get(i));
-        tempJson.put("roomData", tempJson2);
-
-        send.put("waitingRoomData", tempJson);
-        sendMessage(send.toString());
+        user.initializeInvitationData(id, code, maxPlayerCount, boardType, minEntryValue, minCallValue, owner_id, seatPosition, boardCoin);
     }
 
-    private void sendRequestExitFromWaitingRoom() {
 
-        JSONObject send = initiateJson();
 
-        send.put("username", user.getUsername());
-        send.put("requestType", "WaitingRoom");
+    private void joinWaitingRoomByCode(int code) {
 
-        JSONObject tempJson = new JSONObject();
-
-        tempJson.put("requestType", "RemoveMeFromWaitingRoom");
-
-        send.put("waitingRoomData", tempJson);
-        sendMessage(send.toString());
+        sendJoinWaitingRoomByCodeRequest(code);
     }
 
     private void sendJoinWaitingRoomByCodeRequest(int code) {
@@ -1797,20 +1607,208 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
-    private void showWaitingRoomData(JSONObject temp) {
+    private void askJoinWaitingRoomByCodeResponse(JSONObject temp) {
 
-        System.out.println(temp);
+        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
+        String msg = waitingRoomData.getString("message");
+
+        addTextInGui(msg);
+
     }
+
+
+    private void cancelJoiningRequest(){
+
+        sendCancelJoinRequest();
+    }
+
+    private void sendCancelJoinRequest(){
+
+        JSONObject send = initiateJson();
+
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("requestType", "CancelJoinRequest");
+
+        send.put("waitingRoomData", tempJson);
+        sendMessage(send.toString());
+
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+    //=================================================================================
+    //
+    //          APPROVE JOIN REQUESTS
+    //
+    //=================================================================================
+
+    private void askApproveJoinRequest(JSONObject temp) {
+
+        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
+        String msg = waitingRoomData.getString("message");
+
+        User tempUser = User.JSONToUser( waitingRoomData.getJSONObject("userData") );
+        String username = tempUser.getUsername();
+
+        addTextInGui(msg);
+
+        approveJoinRequest(username);
+    }
+
+
+
+    private void approveJoinRequest(String username){
+
+        sendApproveJoinRequest(username);
+    }
+
+    private void sendApproveJoinRequest(String username){
+
+        JSONObject send = initiateJson();
+
+        send.put("owner", user.getUsername());
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+        tempJson.put("requestType", "ApproveJoinRequest");
+        tempJson.put("username", username);
+
+        send.put("waitingRoomData", tempJson);
+        sendMessage(send.toString());
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+
+
+
+
+    //=================================================================================
+    //
+    //          ALL PLAYERS DATA
+    //
+    //=================================================================================
+
+    private void showPlayersData(JSONObject jsonObject){
+
+        JSONArray array = jsonObject.getJSONArray("data");
+        System.out.println("in user " + user.getUsername() + " -> " + array);
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+
+
+
+
+
+
+    //=================================================================================
+    //
+    //          REMOVE FROM WAITING ROOM
+    //
+    //=================================================================================
+
+    private void removeMeFromWaitingRoom(){
+
+        int loc = user.getSeatPosition();
+        user.deInitializeInvitationData();
+        sendRemoveMeFromWaitingRoom(loc);
+    }
+
+    private void sendRemoveMeFromWaitingRoom(int loc){
+
+        JSONObject send = initiateJson();
+
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+        tempJson.put("requestType", "RemoveMeFromWaitingRoom");
+        tempJson.put("seatPosition", loc);
+
+        send.put("waitingRoomData", tempJson);
+        sendMessage(send.toString());
+
+    }
+
+    //  OWNER ONLY
+    private void removeFromWaitingRoom(int[] seat){
+
+        JSONObject send = initiateJson();
+
+        send.put("owner", user.getUsername());
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+        tempJson.put("requestType", "RemoveFromWaitingRoom");
+
+        JSONArray array = new JSONArray();
+        for(int x : seat) array.put(x);
+
+        send.put("data", array);
+
+        send.put("waitingRoomData", tempJson);
+        sendMessage(send.toString());
+    }
+
+
+    private void removedFromWaitingRoom(JSONObject jsonObject) {
+
+        JSONObject waitingRoomData = jsonObject.getJSONObject("waitingRoomData");
+        String message = waitingRoomData.getString("message");
+
+        if(message != null) addTextInGui(message);
+
+        user.deInitializeInvitationData();
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
+
+
+
+
+
+
+
+
+
+
+    //=================================================================================
+    //
+    //          START GAME FROM WAITING ROOM
+    //
+    //=================================================================================
 
     private void sendStartGameRequest() {
 
         JSONObject send = initiateJson();
 
-        send.put("owner", owner);
         send.put("requestType", "WaitingRoom");
 
         JSONObject tempJson = new JSONObject();
-
         tempJson.put("requestType", "StartGame");
 
         send.put("waitingRoomData", tempJson);
@@ -1820,19 +1818,14 @@ public class ClientToServer extends JFrame {
     private void showStartGameResponse(JSONObject temp) {
 
         JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
-
-        boolean success = waitingRoomData.getBoolean("success");
         String msg = waitingRoomData.getString("message");
 
-        addTextInGui(msg + "\nsuccess " + success);
+        addTextInGui(msg);
     }
 
-    //===========================================================================================
+    //=================================================================================
     //
-    //===========================================================================================
-
-
-
+    //=================================================================================
 
 
 
@@ -1874,6 +1867,8 @@ public class ClientToServer extends JFrame {
     private void infoUserClick() {
         curCommand = "UserInfo";
         addTextInGui(User.UserToJsonInGame(user).toString());
+
+        //removeFromWaitingRoom(new int[]{1,2});
     }
 
     private void joinClick() {
@@ -1889,26 +1884,7 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        //requestUpdateOwnInGame();
 
-        //addFreeCoinRequest();
-
-        /*
-        ArrayList temp = new ArrayList<String>();
-
-        temp.add("b");
-        temp.add("c");
-        temp.add("d");
-
-        createWaitingRoom(temp, "board1", 100000, 100000);
-
-        new Timer().schedule(new TimerTask() {
-            @Override
-            public void run() {
-                startGameFromWaitingRoom();
-            }
-        }, 15000);
-        */
     }
 
     private void friendsButtonClicked() {
@@ -1979,8 +1955,7 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        sendAddBoardCoinInGameRequest(v);
-
+                        coinBuyRequest(v, "bkash", "lol");
                     }
                 }
             }
@@ -2153,26 +2128,6 @@ public class ClientToServer extends JFrame {
 
 
 
-    private void gameStartIfInAGame() {
-
-        //KONO GAME E NAI
-        if (gameThreadId == -1) return;
-        if (gameRunning == true) return;
-
-        sendTryStartCurrentGameRequest();
-    }
-
-
-
-
-
-
-    private void roundInitialize() {
-
-        user.getPlayerCards().clear();
-        user.getBoardCards().clear();
-    }
-
     //====================================================================================
     //
     //      GAME BUTTON ON CLICK FUNCTIONS
@@ -2187,8 +2142,8 @@ public class ClientToServer extends JFrame {
     //====================================================================================
 
     private void clickedCallButton() {
-        String send = "";
-        call = "Call";
+        //String send = "";
+        //call = "Call";
         //user.setCurrentCoin(user.getCurrentCoin() - minCallValue);
 
         sendGameThreadCallRequest();
