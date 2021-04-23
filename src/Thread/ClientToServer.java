@@ -1899,8 +1899,8 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        createWaitingRoom("board1", 100000, 10000);
-        sendJoinAmount(200000);
+        //createWaitingRoom("board1", 100000, 10000);
+        //sendJoinAmount(200000);
 
     }
 
@@ -1972,10 +1972,10 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        //coinBuyRequest(v, "bkash", "lol");
+                        coinBuyRequest(v, "bkash", "lol");
 
-                        joinWaitingRoomByCode(v);
-                        sendJoinAmount(200000);
+                        //joinWaitingRoomByCode(v);
+                        //sendJoinAmount(200000);
                     }
                 }
             }
