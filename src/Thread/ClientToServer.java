@@ -473,10 +473,6 @@ public class ClientToServer extends JFrame {
 
                 askJoinWaitingRoomByCodeResponse(jsonIncoming);
             }
-            else if(tempJson.get("requestType").equals("AskApproveJoinRequest")) {
-
-                askApproveJoinRequest(jsonIncoming);
-            }
             else if(tempJson.get("requestType").equals("RemoveFromWaitingRoomResponse")) {
 
                 removedFromWaitingRoom(jsonIncoming);
@@ -1646,54 +1642,6 @@ public class ClientToServer extends JFrame {
 
     //=================================================================================
     //
-    //          APPROVE JOIN REQUESTS
-    //
-    //=================================================================================
-
-    private void askApproveJoinRequest(JSONObject temp) {
-
-        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
-        String msg = waitingRoomData.getString("message");
-
-        User tempUser = User.JSONToUser( waitingRoomData.getJSONObject("userData") );
-        String username = tempUser.getUsername();
-
-        addTextInGui(msg);
-
-        approveJoinRequest(username);
-    }
-
-
-
-    private void approveJoinRequest(String username){
-
-        sendApproveJoinRequest(username);
-    }
-
-    private void sendApproveJoinRequest(String username){
-
-        JSONObject send = initiateJson();
-
-        send.put("owner", user.getUsername());
-        send.put("requestType", "WaitingRoom");
-
-        JSONObject tempJson = new JSONObject();
-        tempJson.put("requestType", "ApproveJoinRequest");
-        tempJson.put("username", username);
-
-        send.put("waitingRoomData", tempJson);
-        sendMessage(send.toString());
-    }
-
-    //=================================================================================
-    //
-    //=================================================================================
-
-
-
-
-    //=================================================================================
-    //
     //          ADD BOARD COIN IN WAITING ROOM
     //
     //=================================================================================
@@ -1951,6 +1899,9 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
+        createWaitingRoom("board1", 100000, 10000);
+        sendJoinAmount(200000);
+
     }
 
     private void friendsButtonClicked() {
@@ -2021,7 +1972,10 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        coinBuyRequest(v, "bkash", "lol");
+                        //coinBuyRequest(v, "bkash", "lol");
+
+                        joinWaitingRoomByCode(v);
+                        sendJoinAmount(200000);
                     }
                 }
             }
