@@ -1935,8 +1935,6 @@ public class ClientToServer extends JFrame {
         show += "Enter entry amount: " ;
 
         addTextInGui(show);
-
-        joinAmountForGame(200000);
     }
 
 
@@ -2104,10 +2102,10 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        //coinBuyRequest(v, "bkash", "lol");
+                        coinBuyRequest(v, "bkash", "lol");
 
                         //joinWaitingRoomByCode(v);
-                        joinGameThreadByCode(v);
+                        //joinGameThreadByCode(v);
                     }
                 }
             }
