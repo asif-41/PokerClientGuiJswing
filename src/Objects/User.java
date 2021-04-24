@@ -1116,7 +1116,10 @@ public class User {
     }
 
     public void setBoardCoin(long boardCoin) {
+
+        this.currentCoin += this.boardCoin;
         this.boardCoin = boardCoin;
+        this.currentCoin -= boardCoin;
     }
 
     public int getSeatPosition() {

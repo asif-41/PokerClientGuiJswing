@@ -452,6 +452,14 @@ public class ClientToServer extends JFrame {
                 joinGame.setText("Join");
                 addTextInGui("Leaving game");
             }
+            else if (tempJson.get("gameRequest").equals("AskJoinGameThreadByCodeResponse")){
+
+                joinGameThreadByCodeResponse(jsonIncoming);
+            }
+            else if(tempJson.get("gameRequest").equals("AskBoardCoin")){
+
+                askBoardCoinForGame(jsonIncoming);
+            }
         }
         else if (jsonIncoming.getString("requestType").equals("WaitingRoom")) {
 
@@ -1797,6 +1805,27 @@ public class ClientToServer extends JFrame {
     //
     //=================================================================================
 
+    private void sendStartGameRequest() {
+
+        JSONObject send = initiateJson();
+
+        send.put("requestType", "WaitingRoom");
+
+        JSONObject tempJson = new JSONObject();
+        tempJson.put("requestType", "StartGame");
+
+        send.put("waitingRoomData", tempJson);
+        sendMessage(send.toString());
+    }
+
+    private void showStartGameResponse(JSONObject temp) {
+
+        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
+        String msg = waitingRoomData.getString("message");
+
+        addTextInGui(msg);
+    }
+
 
     //=================================================================================
     //
@@ -1832,26 +1861,116 @@ public class ClientToServer extends JFrame {
     //
     //=================================================================================
 
-    private void sendStartGameRequest() {
+    private void joinGameThreadByCode(int code) {
+
+        sendJoinGameThreadByCodeRequest(code);
+    }
+
+    private void sendJoinGameThreadByCodeRequest(int code) {
 
         JSONObject send = initiateJson();
 
-        send.put("requestType", "WaitingRoom");
+        send.put("requestType", "GameThread");
 
         JSONObject tempJson = new JSONObject();
-        tempJson.put("requestType", "StartGame");
 
-        send.put("waitingRoomData", tempJson);
+        tempJson.put("requestType", "AskJoinGameThreadByCode");
+        tempJson.put("gameCode", code);
+
+        send.put("gameData", tempJson);
         sendMessage(send.toString());
     }
 
-    private void showStartGameResponse(JSONObject temp) {
 
-        JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
-        String msg = waitingRoomData.getString("message");
+    private void joinGameThreadByCodeResponse(JSONObject temp) {
+
+        JSONObject gameData = temp.getJSONObject("gameData");
+        String msg = gameData.getString("message");
 
         addTextInGui(msg);
     }
+
+
+    private void cancelJoiningGameRequest(){
+
+        user.deInitializeGameData();
+        sendCancelJoiningGameRequest();
+    }
+
+    private void sendCancelJoiningGameRequest(){
+
+        JSONObject send = initiateJson();
+
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("requestType", "CancelJoinRequest");
+
+        send.put("gameData", tempJson);
+        sendMessage(send.toString());
+
+    }
+
+
+
+
+    private void askBoardCoinForGame(JSONObject jsonObject){
+
+        JSONObject gameData = jsonObject.getJSONObject("gameData");
+
+        int gameId = gameData.getInt("gameId");
+        int gameCode = gameData.getInt("gameCode");
+        int ownerId = gameData.getInt("ownerId");
+        long minEntryValue = gameData.getLong("minEntryValue");
+        long minCallValue = gameData.getLong("minCallValue");
+        String boardType = gameData.getString("boardType");
+
+        user.initializeGameData(gameId, gameCode, boardType, minEntryValue, minCallValue, ownerId, -1, 0 );
+
+        String show = "Min entry value " + minEntryValue + " min call value " + minCallValue + " boardType " + boardType + "\n";
+        show += "Enter entry amount: " ;
+
+        addTextInGui(show);
+
+        joinAmountForGame(200000);
+    }
+
+
+
+    private void joinAmountForGame(long value){
+
+        user.setBoardCoin(value);
+        sendJoinAmountForGame(value);
+    }
+
+    private void sendJoinAmountForGame(long value){
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("requestType", "JoinAmount");
+        tempJson.put("amount", value);
+
+        send.put("gameData", tempJson);
+        sendMessage(send.toString());
+    }
+
+        /*
+
+
+        send.put("username", user.getUsername());
+        send.put("requestType", "GameThread");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("requestType", "GameCall");
+        tempJson.put("call", "Call");
+
+        send.put("gameData", tempJson);
+         */
 
     //=================================================================================
     //
@@ -1995,9 +2114,10 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        coinBuyRequest(v, "bkash", "lol");
+                        //coinBuyRequest(v, "bkash", "lol");
 
                         //joinWaitingRoomByCode(v);
+                        joinGameThreadByCode(v);
                     }
                 }
             }
