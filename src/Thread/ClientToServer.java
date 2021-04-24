@@ -1886,6 +1886,9 @@ public class ClientToServer extends JFrame {
 
         JSONObject gameData = temp.getJSONObject("gameData");
         String msg = gameData.getString("message");
+        boolean success = gameData.getBoolean("success");
+
+        if(success == false) user.deInitializeGameData();
 
         addTextInGui(msg);
     }
@@ -1932,6 +1935,8 @@ public class ClientToServer extends JFrame {
         show += "Enter entry amount: " ;
 
         addTextInGui(show);
+
+        joinAmountForGame(200000);
     }
 
 
@@ -1949,6 +1954,7 @@ public class ClientToServer extends JFrame {
 
         JSONObject tempJson = new JSONObject();
 
+        tempJson.put("gameCode", user.getGameCode());
         tempJson.put("requestType", "JoinAmount");
         tempJson.put("amount", value);
 
@@ -2098,10 +2104,10 @@ public class ClientToServer extends JFrame {
                         textField.setEditable(false);
                         curCommand = "";
 
-                        coinBuyRequest(v, "bkash", "lol");
+                        //coinBuyRequest(v, "bkash", "lol");
 
                         //joinWaitingRoomByCode(v);
-                        //joinGameThreadByCode(v);
+                        joinGameThreadByCode(v);
                     }
                 }
             }
