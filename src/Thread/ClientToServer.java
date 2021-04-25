@@ -491,7 +491,7 @@ public class ClientToServer extends JFrame {
             }
             else if(tempJson.get("requestType").equals("LoadPlayersData")){
 
-                showPlayersData(jsonIncoming);
+                loadPlayersDataWaitingRoom(jsonIncoming);
             }
             else if(tempJson.get("requestType").equals("EditBoardCoinResponse")){
 
@@ -1806,6 +1806,8 @@ public class ClientToServer extends JFrame {
     //
     //          START GAME FROM WAITING ROOM
     //
+    //          LOAD PLAYERS DATA AND SHOW
+    //
     //=================================================================================
 
     private void sendStartGameRequest() {
@@ -1829,6 +1831,17 @@ public class ClientToServer extends JFrame {
         addTextInGui(msg);
     }
 
+
+    private void loadPlayersDataWaitingRoom(JSONObject temp) {
+
+        JSONArray data = temp.getJSONArray("data");
+
+        for (int i = 0; i < data.length(); i++) {
+
+            User tempUser = User.JSONToUserInGame((JSONObject) data.get(i));
+            user.getInWaitingRoomPlayers()[tempUser.getSeatPosition()] = tempUser;
+        }
+    }
 
     //=================================================================================
     //
