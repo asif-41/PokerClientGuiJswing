@@ -1615,9 +1615,12 @@ public class ClientToServer extends JFrame {
 
         JSONObject waitingRoomData = temp.getJSONObject("waitingRoomData");
         String msg = waitingRoomData.getString("message");
+        int code = waitingRoomData.getInt("gameCode");
+        boolean success = waitingRoomData.getBoolean("success");
 
         addTextInGui(msg);
 
+        waitingRoomJoinDone(success, code);
     }
 
 
@@ -1973,6 +1976,28 @@ public class ClientToServer extends JFrame {
 
 
 
+    //=================================================================================
+    //
+    //          JOIN GAME BY CODE
+    //
+    //=================================================================================
+
+    private void joinByCode(int code){
+
+        joinWaitingRoomByCode(code);
+    }
+
+    private void waitingRoomJoinDone(boolean success, int code){
+
+        if(success == false) joinGameThreadByCode(code);
+    }
+
+    //=================================================================================
+    //
+    //=================================================================================
+
+
+
 
 
 
@@ -2106,6 +2131,7 @@ public class ClientToServer extends JFrame {
 
                         //joinWaitingRoomByCode(v);
                         //joinGameThreadByCode(v);
+                        //joinByCode(v);
                     }
                 }
             }
