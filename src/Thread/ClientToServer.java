@@ -176,7 +176,7 @@ public class ClientToServer extends JFrame {
         curCommand = "";
         msg = "";
 
-        createWebSocketClient();
+        //createWebSocketClient();
         tryConnection();
     }
 
@@ -225,6 +225,13 @@ public class ClientToServer extends JFrame {
             public void onException(Exception e) {
 
                 addTextInGui("error ashchhe " + e);
+                System.out.println("closed");
+
+                if(hasConnected){
+                    hasConnected = false;
+                    webSocketClient.close();
+                    tryConnection();
+                }
             }
 
             @Override
@@ -239,6 +246,7 @@ public class ClientToServer extends JFrame {
 
     private void tryConnection() {
 
+        createWebSocketClient();
         connectionCheckTimer = new Timer();
         webSocketClient.connect();
 
@@ -1331,6 +1339,8 @@ public class ClientToServer extends JFrame {
     }
 
     private void processResult(JSONObject jsonObject) {
+
+        System.out.println("Eije dhukse -> " + jsonObject);
 
         loadWinnerData(jsonObject);
 
