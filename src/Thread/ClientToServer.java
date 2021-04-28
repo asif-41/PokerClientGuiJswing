@@ -259,8 +259,6 @@ public class ClientToServer extends JFrame {
 
     private void connectionChecker() {
 
-        System.out.println(tryConnectionTimeCounter);
-
         if (hasConnected) {
             tryConnectionTimeCounter = -1;
             connectionCheckTimer.cancel();
