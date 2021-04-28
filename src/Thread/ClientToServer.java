@@ -60,6 +60,7 @@ public class ClientToServer extends JFrame {
     private Timer connectionCheckTimer;                     //      TIMER TO CHECK IF HAS CONNECTED
 
 
+    private int tryCounter;
     private int tryConnectionTimeCounter;                   //      SECONDS COUNTER
     private int connectionTimeOut;                          //      WEB SOCKET CONNECTION TIMEOUT
     private int reconnectionTimeOut;                        //      WEB SOCKET RECONNECTION TIMEOUT
@@ -148,7 +149,7 @@ public class ClientToServer extends JFrame {
     //============================================================================
 
 
-    public ClientToServer(URI link, int port, int tryConnectionTimeCounter, int connectionTimeOut, int reconnectionTimeOut) {
+    public ClientToServer(URI link, int port, int tryCounter, int connectionTimeOut, int reconnectionTimeOut) {
 
 
         setUpGui();
@@ -168,13 +169,9 @@ public class ClientToServer extends JFrame {
         user = null;
         jsonIncoming = null;
 
-        this.tryConnectionTimeCounter = tryConnectionTimeCounter;
+        this.tryCounter = tryCounter;
         this.connectionTimeOut = connectionTimeOut;
         this.reconnectionTimeOut = reconnectionTimeOut;
-        hasConnected = false;
-
-        curCommand = "";
-        msg = "";
 
         //createWebSocketClient();
         tryConnection();
@@ -228,7 +225,6 @@ public class ClientToServer extends JFrame {
                 System.out.println("closed");
 
                 if(hasConnected){
-                    hasConnected = false;
                     webSocketClient.close();
                     tryConnection();
                 }
@@ -250,6 +246,8 @@ public class ClientToServer extends JFrame {
         connectionCheckTimer = new Timer();
         webSocketClient.connect();
 
+        hasConnected = false;
+        tryConnectionTimeCounter = tryCounter;
         connectionCheckTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
@@ -260,6 +258,8 @@ public class ClientToServer extends JFrame {
     }
 
     private void connectionChecker() {
+
+        System.out.println(tryConnectionTimeCounter);
 
         if (hasConnected) {
             tryConnectionTimeCounter = -1;
