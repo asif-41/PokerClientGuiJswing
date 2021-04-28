@@ -40,11 +40,12 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================
 
-    public static int boardTypeCount = 5;
-    public static long minCallValue[] = {10000, 10000, 10000, 10000, 10000};
-    public static String boardType[] = {"board1", "board2", "board3", "board4", "board5"};
-    public static long minEntryValue[] = {100000, 100000, 100000, 100000, 100000};
-
+    private int boardTypeCount = 10;
+    private long minCallValue[] = {10000, 20000, 100000, 200000, 500000, 1000000, 2000000, 4000000, 10000000, 20000000};
+    private String boardType[] = {"board1", "board2", "board3", "board4", "board5", "board6", "board7", "board8", "board9", "board10"};
+    private long minEntryValue[] = {50000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000, 500000000};
+    private long maxEntryValue[] = {1000000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000, 500000000, 1000000000, 2000000000};
+    private long mcr[] = {0, 0, 2500000, 7000000, 15000000, 40000000, 100000000, 150000000, 400000000, 1000000000};
 
 
     URI webSocketLink;                                      //      SOCKET LINK
