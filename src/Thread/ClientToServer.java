@@ -242,19 +242,18 @@ public class ClientToServer extends JFrame {
 
     private void tryConnection() {
 
-        createWebSocketClient();
-        connectionCheckTimer = new Timer();
-        webSocketClient.connect();
-
         hasConnected = false;
         tryConnectionTimeCounter = tryCounter;
+        connectionCheckTimer = new Timer();
+
+        createWebSocketClient();
+        webSocketClient.connect();
         connectionCheckTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
             public void run() {
                 connectionChecker();
             }
         }, 0, 1000);
-
     }
 
     private void connectionChecker() {
