@@ -38,6 +38,7 @@ public class User {
     private String fb_id;               //      USER FB ID
     private String gmail_id;            //      USER GMAIL ID
     private String loginMethod;         //      LOGIN METHOD OF USER
+    private String imageLink;
     private boolean isLoggedIn;         //      IS CURRENTLY LOGGED IN
     private long exp;                    //      EXP
     private int roundsWon;              //      ROUNDS WON IN WHOLE CAREER
@@ -128,7 +129,7 @@ public class User {
     //
     //============================================================================
 
-    public User(int id, String username, String fb_id, String gmail_id, String loginMethod,
+    public User(int id, String username, String fb_id, String gmail_id, String loginMethod, String imageLink,
                 long exp,
                 long currentCoin, long coinWon, long coinLost, int roundsWon, int roundsPlayed,
                 int winStreak, int totalCallCount, int callCount, int raiseCount,
@@ -140,6 +141,7 @@ public class User {
         this.fb_id = fb_id;
         this.gmail_id = gmail_id;
         this.loginMethod = loginMethod;
+        this.imageLink = imageLink;
         this.exp = exp;
         this.currentCoin = currentCoin;
         this.coinWon = coinWon;
@@ -371,6 +373,7 @@ public class User {
         temp.put("fb_id", user.getFb_id());
         temp.put("gmail_id", user.getGmail_id());
         temp.put("loginMethod", user.getLoginMethod());
+        temp.put("imageLink", user.getImageLink());
         temp.put("exp", user.getExp());
         temp.put("currentCoin", user.getCurrentCoin());
         temp.put("coinWon", user.getCoinWon());
@@ -428,6 +431,7 @@ public class User {
                 temp.getString("fb_id"),
                 temp.getString("gmail_id"),
                 temp.getString("loginMethod"),
+                temp.getString("imageLink"),
                 temp.getLong("exp"),
                 temp.getLong("currentCoin"),
                 temp.getLong("coinWon"),
@@ -459,6 +463,7 @@ public class User {
                 temp.getString("fb_id"),
                 temp.getString("gmail_id"),
                 temp.getString("loginMethod"),
+                temp.getString("imageLink"),
                 temp.getLong("exp"),
                 temp.getLong("currentCoin"),
                 temp.getLong("coinWon"),
@@ -526,6 +531,7 @@ public class User {
         temp.put("fb_id", user.getFb_id());
         temp.put("gmail_id", user.getGmail_id());
         temp.put("loginMethod", user.getLoginMethod());
+        temp.put("imageLink", user.getImageLink());
         temp.put("exp", user.getExp());
         temp.put("currentCoin", user.getCurrentCoin());
         temp.put("coinWon", user.getCoinWon());
@@ -1241,6 +1247,13 @@ public class User {
         this.tempMinCallValue = tempMinCallValue;
     }
 
+    public String getImageLink() {
+        return imageLink;
+    }
+
+    public void setImageLink(String imageLink) {
+        this.imageLink = imageLink;
+    }
 
     //===========================================================================
     //

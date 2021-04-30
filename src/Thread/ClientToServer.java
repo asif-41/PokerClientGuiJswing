@@ -2,21 +2,17 @@ package Thread;
 
 
 import Objects.Card;
-import Objects.ImageManipulation;
 import Objects.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tech.gusavila92.websocketclient.WebSocketClient;
 
-import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
-import java.awt.image.BufferedImage;
-import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Timer;
@@ -414,14 +410,6 @@ public class ClientToServer extends JFrame {
 
                 loadPlayersData(jsonIncoming);
             }
-            else if (tempJson.get("gameRequest").equals("LoadImages")) {
-
-                loadGameImages(jsonIncoming);
-            }
-            else if (tempJson.get("gameRequest").equals("RemoveImage")) {
-
-                removeGameImages(jsonIncoming);
-            }
             else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
 
                 showWelcomeGameMessage(jsonIncoming);
@@ -533,14 +521,6 @@ public class ClientToServer extends JFrame {
 
                 loadPlayersDataWaitingRoom(jsonIncoming);
             }
-            else if(tempJson.get("requestType").equals("LoadImages")) {
-
-                loadWaitingRoomImages(jsonIncoming);
-            }
-            else if(tempJson.get("requestType").equals("RemoveImage")) {
-
-                removeWaitingRoomImages(jsonIncoming);
-            }
             else if(tempJson.get("requestType").equals("EditBoardCoinResponse")){
 
                 editBoardCoinInWaitingRoomResponse(jsonIncoming);
@@ -557,51 +537,6 @@ public class ClientToServer extends JFrame {
 
 
 
-    //=======================================================================================
-    //
-    //              IMAGE FUNCTIONS
-    //
-    //=======================================================================================
-
-    private String imagePath(String username, int seatPosition){
-        return "././images/seat" + seatPosition + "_" + username + ".png";
-    }
-
-    private void saveImage(String path, String data){
-        try{
-            BufferedImage bf = ImageManipulation.stringToImage(data);
-            ImageIO.write(bf, "png", new File(path));
-        }catch (Exception e){
-            System.out.println("Error in saving image " + e);
-        }
-    }
-
-    private void deleteImage(String path){
-
-        try{
-
-            File f = new File(path);
-            f.delete();
-
-        }catch (Exception e){
-            System.out.println("Exception in deleting image" + e);
-        }
-
-    }
-
-    private void deleteAllImages(User[] users){
-
-        for(int i=0; i<users.length; i++){
-
-            if(users[i] == null) continue;
-            deleteImage(imagePath(users[i].getUsername(), i));
-        }
-    }
-
-    //=======================================================================================
-    //
-    //=======================================================================================
-
 
 
 
@@ -613,7 +548,7 @@ public class ClientToServer extends JFrame {
     //
     //=============================================================================
 
-    private void requestLogin(String account_data, String account_type, String username, String imagePath) {
+    private void requestLogin(String account_data, String account_type, String username, String imageLink) {
 
         JSONObject send = initiateJson();
         send.put("requestType", "LoginRequest");
@@ -623,7 +558,7 @@ public class ClientToServer extends JFrame {
         tempJson.put("account_id", account_data);
         tempJson.put("account_type", account_type);
         tempJson.put("account_username", username);
-        tempJson.put("imageData", ImageManipulation.imageToString(imagePath));
+        tempJson.put("imageLink", imageLink);
 
         send.put("data", tempJson);
         sendMessage(send.toString());
@@ -940,7 +875,6 @@ public class ClientToServer extends JFrame {
 
     private void leaveGameRoom() {
 
-        deleteAllImages(user.getInGamePlayers());
         user.deInitializeGameData();
     }
 
@@ -999,36 +933,6 @@ public class ClientToServer extends JFrame {
 
         String show = gameData.getString("message");
         addTextInGui(show);
-    }
-
-
-
-    private void loadGameImages(JSONObject jsonObject){
-
-        JSONObject tempJson = jsonObject.getJSONObject("gameData");
-        JSONArray imageData = tempJson.getJSONArray("imageData");
-
-        for(int i=0; i<imageData.length(); i++){
-
-            JSONObject json = imageData.getJSONObject(i);
-
-            int seatPosition = json.getInt("seatPosition");
-            String username = json.getString("username");
-            String img = json.getString("image");
-
-            String path = imagePath(username, seatPosition);
-            saveImage(path, img);
-        }
-    }
-
-    private void removeGameImages(JSONObject jsonObject){
-
-        JSONObject tempJson = jsonObject.getJSONObject("gameData");
-        int seatPosition = tempJson.getInt("seatPosition");
-        String username = tempJson.getString("username");
-
-        String path = imagePath(username, seatPosition);
-        deleteImage(path);
     }
 
     //=======================================================================================
@@ -1913,7 +1817,6 @@ public class ClientToServer extends JFrame {
 
         if(message != null) addTextInGui(message);
 
-        deleteAllImages(user.getInWaitingRoomPlayers());
         user.deInitializeInvitationData();
     }
 
@@ -1974,34 +1877,6 @@ public class ClientToServer extends JFrame {
         }
     }
 
-
-    private void loadWaitingRoomImages(JSONObject jsonObject){
-
-        JSONObject tempJson = jsonObject.getJSONObject("waitingRoomData");
-        JSONArray array = tempJson.getJSONArray("imageData");
-
-        for(int i=0; i<array.length(); i++){
-
-            JSONObject json = array.getJSONObject(i);
-
-            int seatPosition = json.getInt("seatPosition");
-            String username = json.getString("username");
-            String img = json.getString("image");
-
-            saveImage(imagePath(username, seatPosition), img);
-
-        }
-    }
-
-    private void removeWaitingRoomImages(JSONObject jsonObject){
-
-        JSONObject tempJson = jsonObject.getJSONObject("waitingRoomData");
-
-        int seatPosition = tempJson.getInt("seatPosition");
-        String username = tempJson.getString("username");
-
-        deleteImage(imagePath(username, seatPosition));
-    }
 
     //=================================================================================
     //
@@ -2290,7 +2165,7 @@ public class ClientToServer extends JFrame {
                             String username = temp[1];
                             String password = temp[2];
 
-                            requestLogin(username, password, "", "./images/guest.png");
+                            requestLogin(username, password, "", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             curCommand = "";
                         }
                     } else if (curCommand == "Buy") {
