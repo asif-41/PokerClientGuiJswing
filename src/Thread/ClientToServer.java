@@ -2,17 +2,21 @@ package Thread;
 
 
 import Objects.Card;
+import Objects.ImageManipulation;
 import Objects.User;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tech.gusavila92.websocketclient.WebSocketClient;
 
+import javax.imageio.ImageIO;
 import javax.swing.*;
 import javax.swing.border.CompoundBorder;
 import javax.swing.border.LineBorder;
 import java.awt.*;
 import java.awt.event.KeyEvent;
 import java.awt.event.KeyListener;
+import java.awt.image.BufferedImage;
+import java.io.File;
 import java.net.InetAddress;
 import java.net.URI;
 import java.util.Timer;
@@ -48,8 +52,10 @@ public class ClientToServer extends JFrame {
     private long mcr[] = {0, 0, 2500000, 7000000, 15000000, 40000000, 100000000, 150000000, 400000000, 1000000000};
 
 
-    URI webSocketLink;                                      //      SOCKET LINK
-    WebSocketClient webSocketClient;                        //      SOCKET
+    private URI webSocketLink;                                      //      SOCKET LINK
+    private WebSocketClient webSocketClient;                        //      SOCKET
+    private String received;
+
     private int port;                                       //      CONNECTION PORT
     private String host;                                    //      CONNECTION LINK
     //      UNNECESSARY
@@ -152,7 +158,6 @@ public class ClientToServer extends JFrame {
 
     public ClientToServer(URI link, int port, int tryCounter, int connectionTimeOut, int reconnectionTimeOut) {
 
-
         setUpGui();
         guiFunctions();
 
@@ -196,12 +201,30 @@ public class ClientToServer extends JFrame {
             public void onOpen() {
 
                 hasConnected = true;
+                received = "";
             }
 
             @Override
             public void onTextReceived(String s) {
 
-                incomingMsg(s);
+                try{
+                    JSONObject jsonObject = new JSONObject(s);
+
+                    boolean done = jsonObject.getBoolean("done");
+                    String data = jsonObject.getString("data");
+
+                    received += data;
+
+                    if(done == true){
+                        incomingMsg(received);
+                        received = "";
+                    }
+
+                }catch (Exception e){
+                    System.out.println("Exception in converting json in websocket, data length " + received.length());
+                    System.out.println(e);
+                }
+
             }
 
             @Override
@@ -236,9 +259,9 @@ public class ClientToServer extends JFrame {
 
             }
         };
+
         webSocketClient.setConnectTimeout(connectionTimeOut);
         webSocketClient.enableAutomaticReconnection(reconnectionTimeOut);
-
     }
 
     private void tryConnection() {
@@ -303,8 +326,10 @@ public class ClientToServer extends JFrame {
     private void sendMessage(String temp) {
         try {
 
-            System.out.println("Sending -> " + temp);
+            //System.out.println("Sending -> " + temp);
+            System.out.println("sending length -> " + temp.toString().getBytes("UTF-8").length);
             webSocketClient.send(temp);
+            System.out.println("sending done");
 
         } catch (Exception e) {
             addTextInGui("Error in sending msg to server -> " + e);
@@ -312,10 +337,12 @@ public class ClientToServer extends JFrame {
     }
 
     private void incomingMsg(String temp) {
-
         try {
+
+            System.out.println("received length -> " + temp.getBytes("UTF-8").length);
+
             jsonIncoming = new JSONObject(temp);
-            System.out.println(jsonIncoming);
+            //System.out.println(jsonIncoming);
 
         } catch (Exception e) {
             System.out.println("Error in getting json in client side\n" + e);
@@ -367,7 +394,6 @@ public class ClientToServer extends JFrame {
 
             requestAbortResponse(jsonIncoming);
         }
-
         else if (jsonIncoming.get("requestType").equals("UpdateOwnResponse")) {
 
             loadUpdateOwnResponse(jsonIncoming);
@@ -387,6 +413,14 @@ public class ClientToServer extends JFrame {
             else if (tempJson.get("gameRequest").equals("LoadPlayersData")) {
 
                 loadPlayersData(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("LoadImages")) {
+
+                loadGameImages(jsonIncoming);
+            }
+            else if (tempJson.get("gameRequest").equals("RemoveImage")) {
+
+                removeGameImages(jsonIncoming);
             }
             else if (tempJson.get("gameRequest").equals("WelcomeGameMessage")) {
 
@@ -499,6 +533,14 @@ public class ClientToServer extends JFrame {
 
                 loadPlayersDataWaitingRoom(jsonIncoming);
             }
+            else if(tempJson.get("requestType").equals("LoadImages")) {
+
+                loadWaitingRoomImages(jsonIncoming);
+            }
+            else if(tempJson.get("requestType").equals("RemoveImage")) {
+
+                removeWaitingRoomImages(jsonIncoming);
+            }
             else if(tempJson.get("requestType").equals("EditBoardCoinResponse")){
 
                 editBoardCoinInWaitingRoomResponse(jsonIncoming);
@@ -512,6 +554,57 @@ public class ClientToServer extends JFrame {
     //=====================================================================================
 
 
+
+
+
+    //=======================================================================================
+    //
+    //              IMAGE FUNCTIONS
+    //
+    //=======================================================================================
+
+    private String imagePath(String username, int seatPosition){
+        return "././images/seat" + seatPosition + "_" + username + ".png";
+    }
+
+    private void saveImage(String path, String data){
+        try{
+            BufferedImage bf = ImageManipulation.stringToImage(data);
+            ImageIO.write(bf, "png", new File(path));
+        }catch (Exception e){
+            System.out.println("Error in saving image " + e);
+        }
+    }
+
+    private void deleteImage(String path){
+
+        try{
+
+            File f = new File(path);
+            f.delete();
+
+        }catch (Exception e){
+            System.out.println("Exception in deleting image" + e);
+        }
+
+    }
+
+    private void deleteAllImages(User[] users){
+
+        for(int i=0; i<users.length; i++){
+
+            if(users[i] == null) continue;
+            deleteImage(imagePath(users[i].getUsername(), i));
+        }
+    }
+
+    //=======================================================================================
+    //
+    //=======================================================================================
+
+
+
+
     //=============================================================================
     //
     //          LOGIN FUNCTIONS, UPDATE OWN FUNCTION
@@ -520,7 +613,7 @@ public class ClientToServer extends JFrame {
     //
     //=============================================================================
 
-    private void requestLogin(String account_data, String account_type, String username) {
+    private void requestLogin(String account_data, String account_type, String username, String imagePath) {
 
         JSONObject send = initiateJson();
         send.put("requestType", "LoginRequest");
@@ -530,9 +623,9 @@ public class ClientToServer extends JFrame {
         tempJson.put("account_id", account_data);
         tempJson.put("account_type", account_type);
         tempJson.put("account_username", username);
+        tempJson.put("imageData", ImageManipulation.imageToString(imagePath));
 
         send.put("data", tempJson);
-
         sendMessage(send.toString());
     }
 
@@ -847,6 +940,7 @@ public class ClientToServer extends JFrame {
 
     private void leaveGameRoom() {
 
+        deleteAllImages(user.getInGamePlayers());
         user.deInitializeGameData();
     }
 
@@ -866,6 +960,7 @@ public class ClientToServer extends JFrame {
     //              GAME THREAD FUNCTIONALITIES
     //
     //=======================================================================================
+
 
 
     //=======================================================================================
@@ -906,6 +1001,35 @@ public class ClientToServer extends JFrame {
         addTextInGui(show);
     }
 
+
+
+    private void loadGameImages(JSONObject jsonObject){
+
+        JSONObject tempJson = jsonObject.getJSONObject("gameData");
+        JSONArray imageData = tempJson.getJSONArray("imageData");
+
+        for(int i=0; i<imageData.length(); i++){
+
+            JSONObject json = imageData.getJSONObject(i);
+
+            int seatPosition = json.getInt("seatPosition");
+            String username = json.getString("username");
+            String img = json.getString("image");
+
+            String path = imagePath(username, seatPosition);
+            saveImage(path, img);
+        }
+    }
+
+    private void removeGameImages(JSONObject jsonObject){
+
+        JSONObject tempJson = jsonObject.getJSONObject("gameData");
+        int seatPosition = tempJson.getInt("seatPosition");
+        String username = tempJson.getString("username");
+
+        String path = imagePath(username, seatPosition);
+        deleteImage(path);
+    }
 
     //=======================================================================================
     //              INITIALIZING GAME DATA
@@ -1338,8 +1462,6 @@ public class ClientToServer extends JFrame {
 
     private void processResult(JSONObject jsonObject) {
 
-        System.out.println("Eije dhukse -> " + jsonObject);
-
         loadWinnerData(jsonObject);
 
         JSONObject data = jsonObject.getJSONObject("data");
@@ -1563,6 +1685,8 @@ public class ClientToServer extends JFrame {
         show += "Enter entry amount: " ;
 
         addTextInGui(show);
+
+        sendJoinAmount(200000);
     }
 
     private void sendJoinAmount(long value){
@@ -1791,6 +1915,7 @@ public class ClientToServer extends JFrame {
 
         if(message != null) addTextInGui(message);
 
+        deleteAllImages(user.getInWaitingRoomPlayers());
         user.deInitializeInvitationData();
     }
 
@@ -1849,6 +1974,35 @@ public class ClientToServer extends JFrame {
             User tempUser = User.JSONToUserInGame((JSONObject) data.get(i));
             user.getInWaitingRoomPlayers()[tempUser.getSeatPosition()] = tempUser;
         }
+    }
+
+
+    private void loadWaitingRoomImages(JSONObject jsonObject){
+
+        JSONObject tempJson = jsonObject.getJSONObject("waitingRoomData");
+        JSONArray array = tempJson.getJSONArray("imageData");
+
+        for(int i=0; i<array.length(); i++){
+
+            JSONObject json = array.getJSONObject(i);
+
+            int seatPosition = json.getInt("seatPosition");
+            String username = json.getString("username");
+            String img = json.getString("image");
+
+            saveImage(imagePath(username, seatPosition), img);
+
+        }
+    }
+
+    private void removeWaitingRoomImages(JSONObject jsonObject){
+
+        JSONObject tempJson = jsonObject.getJSONObject("waitingRoomData");
+
+        int seatPosition = tempJson.getInt("seatPosition");
+        String username = tempJson.getString("username");
+
+        deleteImage(imagePath(username, seatPosition));
     }
 
     //=================================================================================
@@ -2064,6 +2218,10 @@ public class ClientToServer extends JFrame {
 
     private void joinClick() {
 
+        removeMeFromWaitingRoom();
+
+        /*
+
         if (joinGame.getText().equals("Join")) {
             requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
             curCommand = "Join";
@@ -2071,11 +2229,13 @@ public class ClientToServer extends JFrame {
             requestAbort();
             curCommand = "Abort";
         }
+
+        */
     }
 
     private void inviteButtonClick() {
 
-        //createWaitingRoom("board1", 100000, 10000);
+        createWaitingRoom("board1", 100000, 10000);
         //sendJoinAmount(200000);
 
     }
@@ -2138,7 +2298,7 @@ public class ClientToServer extends JFrame {
                             String username = temp[1];
                             String password = temp[2];
 
-                            requestLogin(username, password, "");
+                            requestLogin(username, password, "", "./images/guest.png");
                             curCommand = "";
                         }
                     } else if (curCommand == "Buy") {
@@ -2150,7 +2310,7 @@ public class ClientToServer extends JFrame {
 
                         coinBuyRequest(v, "bkash", "lol");
 
-                        //joinWaitingRoomByCode(v);
+                        joinWaitingRoomByCode(v);
                         //joinGameThreadByCode(v);
                         //joinByCode(v);
                     }
@@ -2165,6 +2325,7 @@ public class ClientToServer extends JFrame {
     }
 
     private void setUpGui() {
+
         setTitle("User GUI");
 
         gameButtons = new JPanel();

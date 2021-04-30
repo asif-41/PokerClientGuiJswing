@@ -2,9 +2,6 @@
   <library name="java-android-websocket-client-1.2.2">
     <CLASSES>
       <root url="jar://$PROJECT_DIR$/JarDependency/java-android-websocket-client-1.2.2.jar!/" />
-      <root url="jar://$PROJECT_DIR$/JarDependency/json-20210307.jar!/" />
-      <root url="jar://$PROJECT_DIR$/JarDependency/spring-web-5.3.5.jar!/" />
-      <root url="jar://$PROJECT_DIR$/JarDependency/spring-websocket-5.3.5.jar!/" />
     </CLASSES>
     <JAVADOC />
     <SOURCES />
