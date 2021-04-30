@@ -1685,8 +1685,6 @@ public class ClientToServer extends JFrame {
         show += "Enter entry amount: " ;
 
         addTextInGui(show);
-
-        sendJoinAmount(200000);
     }
 
     private void sendJoinAmount(long value){
@@ -2218,10 +2216,6 @@ public class ClientToServer extends JFrame {
 
     private void joinClick() {
 
-        removeMeFromWaitingRoom();
-
-        /*
-
         if (joinGame.getText().equals("Join")) {
             requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
             curCommand = "Join";
@@ -2229,13 +2223,11 @@ public class ClientToServer extends JFrame {
             requestAbort();
             curCommand = "Abort";
         }
-
-        */
     }
 
     private void inviteButtonClick() {
 
-        createWaitingRoom("board1", 100000, 10000);
+        //createWaitingRoom("board1", 100000, 10000);
         //sendJoinAmount(200000);
 
     }
@@ -2310,7 +2302,7 @@ public class ClientToServer extends JFrame {
 
                         coinBuyRequest(v, "bkash", "lol");
 
-                        joinWaitingRoomByCode(v);
+                        //joinWaitingRoomByCode(v);
                         //joinGameThreadByCode(v);
                         //joinByCode(v);
                     }
