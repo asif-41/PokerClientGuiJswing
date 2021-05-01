@@ -40,11 +40,8 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================
 
-    private long coinAmountOnBuy[] = {10000000};
-    private long coinPriceOnBuy[] = {30};
-
-    private long coinAmountOnWithdraw[] = {10000000};
-    private long coinPriceOnWithdraw[] = {26};
+    private static long coinAmountOnBuy[] = { 30000000, 50000000, 100000000, 200000000, 500000000, 1000000000 };
+    private static long coinPriceOnBuy[] = { 100, 150, 300, 600, 1480, 2950 };
 
     private int boardTypeCount = 10;
     private long minCallValue[] = {10000, 20000, 100000, 200000, 500000, 1000000, 2000000, 4000000, 10000000, 20000000};
@@ -702,28 +699,21 @@ public class ClientToServer extends JFrame {
 
     public double getCurrencyAmount(long coinAmount, String req){
 
-        long[] coinAmounts = {};
-        long[] coinPrices = {};
-
-        if(req.equals("buy")) {
-            coinAmounts = coinAmountOnBuy;
-            coinPrices = coinPriceOnBuy;
-        }
-        else if(req.equals("withdraw")){
-            coinAmounts = coinAmountOnWithdraw;
-            coinPrices = coinPriceOnWithdraw;
-        }
-
         double price = 0.0;
 
-        for(int i=0; i<coinAmounts.length; i++){
+        if(req.equals("buy")) {
 
-            if(coinAmount == coinAmounts[i]){
-                price = coinPrices[i];
-                break;
+            for(int i=0; i<coinAmountOnBuy.length; i++){
+                if(coinAmount == coinAmountOnBuy[i]){
+                    price = coinPriceOnBuy[i];
+                    break;
+                }
             }
         }
+        else if(req.equals("withdraw")){
 
+            price = 26 * ( coinAmount / 10000000 );
+        }
         return price;
     }
 
