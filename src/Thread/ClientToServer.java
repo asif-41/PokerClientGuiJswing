@@ -361,6 +361,14 @@ public class ClientToServer extends JFrame {
             receiveBuyCoinResponse(jsonIncoming);
             //gameStartIfInAGame();
         }
+        else if (jsonIncoming.get("requestType").equals("WithdrawCoinResponse")){
+
+            receiveWithdrawCoinResponse(jsonIncoming);
+        }
+        else if (jsonIncoming.get("requestType").equals("AllTransactionsResponse")){
+
+            allTransactionsRequestResponse(jsonIncoming);
+        }
         else if (jsonIncoming.get("requestType").equals("AddCoinVideoResponse")) {
 
             //requesting to buy coins
@@ -690,29 +698,92 @@ public class ClientToServer extends JFrame {
 
         boolean success = jsonIncoming.getBoolean("success");
         long value = jsonIncoming.getLong("currentCoin");
+        double price = jsonIncoming.getDouble("price");
 
         if (success) user.setCurrentCoin(value);
-        addTextInGui(jsonIncoming.getString("message"));
+        addTextInGui(jsonIncoming.getString("message") + " price " + price);
     }
 
-    private void coinBuyRequest(long value, String method, String trId) {
+    private void coinBuyRequest(long coinAmount, String method, String trId) {
 
         JSONObject send = initiateJson();
 
         send.put("id", user.getId());
         send.put("username", user.getUsername());
-        send.put("requestType", "BuyCoinRequest");
+        send.put("requestType", "Transaction");
 
         JSONObject tempJson = new JSONObject();
 
+        tempJson.put("request", "BuyCoin");
         tempJson.put("method", method);
         tempJson.put("transactionId", trId);
-        tempJson.put("value", value);
+        tempJson.put("coinAmount", coinAmount);
 
         send.put("data", tempJson);
 
         sendMessage(send.toString());
     }
+
+
+    private void withdrawCoinRequest(long coinAmount, String method, String receiverAccount){
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "Transaction");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("request", "WwithdrawCoin");
+        tempJson.put("method", method);
+        tempJson.put("receiver", receiverAccount);
+        tempJson.put("coinAmount", coinAmount);
+
+        send.put("data", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void receiveWithdrawCoinResponse(JSONObject jsonObject){
+
+        boolean success = jsonIncoming.getBoolean("success");
+        long value = jsonIncoming.getLong("currentCoin");
+        double price = jsonIncoming.getDouble("price");
+
+        if (success) user.setCurrentCoin(value);
+        addTextInGui(jsonIncoming.getString("message") + " price " + price);
+    }
+
+    private void getTransactionsRequest(){
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "Transaction");
+
+        JSONObject tempJson = new JSONObject();
+
+        tempJson.put("request", "ShowTransactions");
+        send.put("data", tempJson);
+
+        sendMessage(send.toString());
+    }
+
+    private void allTransactionsRequestResponse(JSONObject jsonObject){
+
+        JSONArray data = jsonObject.getJSONArray("data");
+
+        String show = "Number of transactions " + data.length() + "\n";
+        for(int i=0; i<data.length(); i++) show += data.getJSONObject(i) + "\n";
+
+        addTextInGui(show);
+    }
+
+
+
+
 
     private void addCoinByVideoRequest() {
 
@@ -2102,6 +2173,8 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
+        withdrawCoinRequest(100000, "bkash", "01783942932");
+        getTransactionsRequest();
         //addFreeCoinRequest();
         //addCoinByVideoRequest();
 
