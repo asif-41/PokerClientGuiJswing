@@ -1096,12 +1096,7 @@ public class User {
         return boardCoin;
     }
 
-    public void setBoardCoin(long boardCoin) {
-
-        this.currentCoin += this.boardCoin;
-        this.boardCoin = boardCoin;
-        this.currentCoin -= boardCoin;
-    }
+    public void setBoardCoin(long boardCoin) { this.boardCoin = boardCoin; }
 
     public int getSeatPosition() {
         return seatPosition;

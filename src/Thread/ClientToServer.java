@@ -2102,6 +2102,9 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
+        //addFreeCoinRequest();
+        //addCoinByVideoRequest();
+
         //createWaitingRoom("board1", 100000, 10000);
         //sendJoinAmount(200000);
 
@@ -2165,7 +2168,9 @@ public class ClientToServer extends JFrame {
                             String username = temp[1];
                             String password = temp[2];
 
-                            requestLogin(username, password, "", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
+                            //String account_data, String account_type, String username,)
+                            requestLogin("hello" + username, "google", "Asif_"+username , "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
+                            //requestLogin("hello" + (int) Math.random(), "facebook", "Asif", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             curCommand = "";
                         }
                     } else if (curCommand == "Buy") {
