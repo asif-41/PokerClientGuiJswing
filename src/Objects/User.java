@@ -28,9 +28,9 @@ public class User {
     //
     //============================================================================
 
-    private static final long expIncrease = 25;
-    public static final String rankString[] = {"Newbie", "Beginner", "Amateur", "Semi-Pro", "Pro", "World-Class", "Legendary"};
-    private static final long ranksValue[] = {0, 50000, 100000, 1000000, 20000000, 500000000};
+    private static long expIncrease;
+    private static String rankString[];
+    private static long ranksValue[];
 
 
     private String username;            //      USERNAME
@@ -1252,6 +1252,18 @@ public class User {
 
     public void setImageLink(String imageLink) {
         this.imageLink = imageLink;
+    }
+
+    public static void setExpIncrease(long expIncrease) {
+        User.expIncrease = expIncrease;
+    }
+
+    public static void setRankString(String[] rankString) {
+        User.rankString = rankString;
+    }
+
+    public static void setRanksValue(long[] ranksValue) {
+        User.ranksValue = ranksValue;
     }
 
     //===========================================================================

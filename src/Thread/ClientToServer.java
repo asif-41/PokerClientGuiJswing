@@ -42,16 +42,16 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================
 
-    private static double coinPricePerCrore = 26.0;
-    private static long coinAmountOnBuy[] = { 30000000, 50000000, 100000000, 200000000, 500000000, 1000000000 };
-    private static long coinPriceOnBuy[] = { 100, 150, 300, 600, 1480, 2950 };
+    private static double coinPricePerCrore;
+    private static long coinAmountOnBuy[];
+    private static double coinPriceOnBuy[];
 
-    private int boardTypeCount = 10;
-    private long minCallValue[] = {10000, 20000, 100000, 200000, 500000, 1000000, 2000000, 4000000, 10000000, 20000000};
-    private String boardType[] = {"board1", "board2", "board3", "board4", "board5", "board6", "board7", "board8", "board9", "board10"};
-    private long minEntryValue[] = {50000, 500000, 2000000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000, 500000000};
-    private long maxEntryValue[] = {1000000, 5000000, 10000000, 25000000, 50000000, 100000000, 250000000, 500000000, 1000000000, 2000000000};
-    private long mcr[] = {0, 0, 2500000, 7000000, 15000000, 40000000, 100000000, 150000000, 400000000, 1000000000};
+    private int boardTypeCount;
+    private long minCallValue[];
+    private String boardType[];
+    private long minEntryValue[];
+    private long maxEntryValue[];
+    private long mcr[];
 
 
     private URI webSocketLink;                                      //      SOCKET LINK
@@ -182,7 +182,9 @@ public class ClientToServer extends JFrame {
         this.reconnectionTimeOut = reconnectionTimeOut;
 
         //createWebSocketClient();
+        deInitializeAppData();
         tryConnection();
+
     }
 
     //=====================================================================================
@@ -611,6 +613,7 @@ public class ClientToServer extends JFrame {
 
             //making new users
 
+            initializeAppData(data.getJSONObject("appData"));
             loadUser(data);
             addTextInGui("Welcome " + user.getUsername());
         } else {
@@ -624,6 +627,73 @@ public class ClientToServer extends JFrame {
         user.setLoggedIn(true);
     }
 
+    private void initializeAppData(JSONObject jsonObject){
+
+        JSONArray array;
+
+        coinPricePerCrore = jsonObject.getDouble("coinPricePerCrore");
+
+        array = jsonObject.getJSONArray("coinAmountOnBuy");
+        coinAmountOnBuy = new long[array.length()];
+        for(int i=0; i<array.length(); i++) coinAmountOnBuy[i] = array.getLong(i);
+
+
+        array = jsonObject.getJSONArray("coinPriceOnBuy");
+        coinPriceOnBuy = new double[array.length()];
+        for(int i=0; i<array.length(); i++) coinPriceOnBuy[i] = array.getDouble(i);
+
+        boardTypeCount = jsonObject.getInt("boardTypeCount");
+
+        array = jsonObject.getJSONArray("minCallValue");
+        minCallValue = new long[boardTypeCount];
+        for(int i=0; i<boardTypeCount; i++) minCallValue[i] = array.getLong(i);
+
+        array = jsonObject.getJSONArray("boardType");
+        boardType = new String[boardTypeCount];
+        for(int i=0; i<boardTypeCount; i++) boardType[i] = array.getString(i);
+
+        array = jsonObject.getJSONArray("minEntryValue");
+        minEntryValue = new long[boardTypeCount];
+        for(int i=0; i<boardTypeCount; i++) minEntryValue[i] = array.getLong(i);
+
+        array = jsonObject.getJSONArray("maxEntryValue");
+        maxEntryValue = new long[boardTypeCount];
+        for(int i=0; i<boardTypeCount; i++) maxEntryValue[i] = array.getLong(i);
+
+        array = jsonObject.getJSONArray("mcr");
+        mcr = new long[boardTypeCount];
+        for(int i=0; i<boardTypeCount; i++) mcr[i] = array.getLong(i);
+
+        User.setExpIncrease(jsonObject.getInt("expIncrease"));
+
+        array = jsonObject.getJSONArray("rankString");
+        String[] temp = new String[array.length()];
+        for(int i=0; i<array.length(); i++) temp[i] = array.getString(i);
+        User.setRankString(temp);
+
+        array = jsonObject.getJSONArray("ranksValue");
+        long[] temp2 = new long[array.length()];
+        for(int i=0; i<array.length(); i++) temp2[i] = array.getLong(i);
+        User.setRanksValue(temp2);
+    }
+
+    private void deInitializeAppData(){
+
+        coinPricePerCrore = 0.0;
+        coinAmountOnBuy = null;
+        coinPriceOnBuy = null;
+
+        boardTypeCount = 0;
+        minCallValue = null;
+        boardType = null;
+        minEntryValue = null;
+        maxEntryValue = null;
+        mcr = null;
+
+        User.setExpIncrease(0);
+        User.setRankString(null);
+        User.setRanksValue(null);
+    }
 
 
 
@@ -693,11 +763,11 @@ public class ClientToServer extends JFrame {
         sendMessage(send.toString());
     }
 
-    private void closeEverything() {
+    public void closeEverything() {
 
         try {
             user = null;
-            this.dispose();
+            //this.dispose();
             webSocketClient.close();
         } catch (Exception e) {
             addTextInGui("Error in closing connection in Client side, error -> " + e);
@@ -2582,8 +2652,6 @@ public class ClientToServer extends JFrame {
     //
     //
     //=====================================================================================
-
-
 
 
 }

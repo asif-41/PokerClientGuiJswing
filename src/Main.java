@@ -2,7 +2,6 @@ import Thread.ClientToServer;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 
 public class Main {
 
@@ -13,12 +12,10 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        ArrayList<ClientToServer> ccc = new ArrayList();
-
         try {
             URI uri = new URI(link);
 
-            for (int i = 0; i < 10; i++) {
+            for (int i = 0; i < 1; i++) {
                 ClientToServer c = new ClientToServer(uri, 1112, 60, 1000, 1000);
 
             }
