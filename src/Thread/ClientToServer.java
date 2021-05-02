@@ -2171,7 +2171,7 @@ public class ClientToServer extends JFrame {
         } else {
             msg += "Login ";
             textField.setEditable(true);
-            inpCount = 2;
+            inpCount = 3;
             curCommand = "Login";
 
             addTextInGui("Enter username and then password");
@@ -2263,10 +2263,11 @@ public class ClientToServer extends JFrame {
                             textField.setEditable(false);
 
                             String[] temp = msg.split(" ");
-                            String username = temp[1];
-                            String password = temp[2];
+                            String account_data = temp[1];
+                            String account_type = temp[2];
+                            String account_username = temp[3];
 
-                            requestLogin(username, password, "hello", "");
+                            requestLogin(account_data, account_type, account_username, "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             //String account_data, String account_type, String username,)
                             //requestLogin("hello" + username, "google", "Asif_"+username , "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             //requestLogin("hello" + (int) Math.random(), "facebook", "Asif", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
