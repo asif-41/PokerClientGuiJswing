@@ -3,6 +3,8 @@ package Thread;
 
 import Objects.Card;
 import Objects.User;
+import com.google.common.base.Splitter;
+import com.google.common.collect.FluentIterable;
 import org.json.JSONArray;
 import org.json.JSONObject;
 import tech.gusavila92.websocketclient.WebSocketClient;
@@ -326,10 +328,22 @@ public class ClientToServer extends JFrame {
 
     private void sendMessage(String temp) {
         try {
-
-            //System.out.println("Sending -> " + temp);
             System.out.println("sending length -> " + temp.toString().getBytes("UTF-8").length);
-            webSocketClient.send(temp);
+
+            String[] splitted = FluentIterable.from(Splitter.fixedLength(8000).split(temp)).toArray(String.class);
+
+            for(int i=0; i<splitted.length-1; i++){
+                JSONObject jsonObject = new JSONObject();
+                jsonObject.put("done", false);
+                jsonObject.put("data", splitted[i]);
+
+                webSocketClient.send(jsonObject.toString());
+            }
+            JSONObject jsonObject = new JSONObject();
+            jsonObject.put("done", true);
+            jsonObject.put("data", splitted[splitted.length-1]);
+
+            webSocketClient.send(jsonObject.toString());
             System.out.println("sending done");
 
         } catch (Exception e) {
@@ -373,6 +387,10 @@ public class ClientToServer extends JFrame {
         else if (jsonIncoming.get("requestType").equals("AllTransactionsResponse")){
 
             allTransactionsRequestResponse(jsonIncoming);
+        }
+        else if (jsonIncoming.get("requestType").equals("CoinBuyWithdrawDataResponse")){
+
+            getCoinBuyWithdrawDataResponse(jsonIncoming);
         }
         else if (jsonIncoming.get("requestType").equals("AddCoinVideoResponse")) {
 
@@ -698,6 +716,36 @@ public class ClientToServer extends JFrame {
     //                  COIN ADDING FUNCTIONS
     //
     //=====================================================================================
+
+    private void getCoinBuyWithdrawDataRequest(){
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "CoinBuyWithdrawDataRequest");
+
+        sendMessage(send.toString());
+    }
+
+    private void getCoinBuyWithdrawDataResponse(JSONObject jsonObject){
+
+        int sz = jsonObject.getJSONArray("buyCoinData").length();
+
+        double withdrawPerCrore = jsonObject.getDouble("withdrawPerCrore");
+        long buyCoinAmount[] = new long[sz];
+        double buyCoinPrice [] = new double[sz];
+
+        JSONArray buyCoinData = jsonObject.getJSONArray("buyCoinData");
+        for(int i=0; i<sz; i++){
+
+            JSONObject temp = buyCoinData.getJSONObject(i);
+            buyCoinAmount[i] = temp.getLong("amount");
+            buyCoinPrice[i] = temp.getDouble("price");
+        }
+    }
+
+
 
     public double getCurrencyAmount(long coinAmount, String req){
 
@@ -2198,8 +2246,9 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        withdrawCoinRequest(100000, "bkash", "01783942932");
-        getTransactionsRequest();
+        getCoinBuyWithdrawDataRequest();
+        //withdrawCoinRequest(100000, "bkash", "01783942932");
+        //getTransactionsRequest();
         //addFreeCoinRequest();
         //addCoinByVideoRequest();
 
