@@ -40,6 +40,7 @@ public class ClientToServer extends JFrame {
     //
     //===========================================================================
 
+    private static double coinPricePerCrore = 26.0;
     private static long coinAmountOnBuy[] = { 30000000, 50000000, 100000000, 200000000, 500000000, 1000000000 };
     private static long coinPriceOnBuy[] = { 100, 150, 300, 600, 1480, 2950 };
 
@@ -207,6 +208,7 @@ public class ClientToServer extends JFrame {
             public void onTextReceived(String s) {
 
                 try{
+
                     JSONObject jsonObject = new JSONObject(s);
 
                     boolean done = jsonObject.getBoolean("done");
@@ -712,7 +714,7 @@ public class ClientToServer extends JFrame {
         }
         else if(req.equals("withdraw")){
 
-            price = 26 * ( coinAmount / 10000000 );
+            price = coinPricePerCrore * ( coinAmount / 10000000 );
         }
         return price;
     }
@@ -2264,8 +2266,9 @@ public class ClientToServer extends JFrame {
                             String username = temp[1];
                             String password = temp[2];
 
+                            requestLogin(username, password, "hello", "");
                             //String account_data, String account_type, String username,)
-                            requestLogin("hello" + username, "google", "Asif_"+username , "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
+                            //requestLogin("hello" + username, "google", "Asif_"+username , "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             //requestLogin("hello" + (int) Math.random(), "facebook", "Asif", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             curCommand = "";
                         }
@@ -2529,8 +2532,6 @@ public class ClientToServer extends JFrame {
     //
     //
     //=====================================================================================
-
-
 
 
 
