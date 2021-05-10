@@ -262,6 +262,10 @@ public class ClientToServer extends JFrame {
             @Override
             public void onCloseReceived() {
 
+                if(hasConnected){
+                    webSocketClient.close();
+                    tryConnection();
+                }
             }
         };
 
@@ -357,6 +361,7 @@ public class ClientToServer extends JFrame {
         try {
 
             System.out.println("received length -> " + temp.getBytes("UTF-8").length);
+            System.out.println(temp);
 
             jsonIncoming = new JSONObject(temp);
             //System.out.println(jsonIncoming);
@@ -520,6 +525,10 @@ public class ClientToServer extends JFrame {
             else if(tempJson.get("gameRequest").equals("AskBoardCoin")){
 
                 askBoardCoinForGame(jsonIncoming);
+            }
+            else if(tempJson.get("gameRequest").equals("DeductBlindCoins")){
+
+                deductBlindCoins(jsonIncoming);
             }
         }
         else if (jsonIncoming.getString("requestType").equals("WaitingRoom")) {
@@ -767,7 +776,7 @@ public class ClientToServer extends JFrame {
 
         try {
             user = null;
-            //this.dispose();
+            this.dispose();
             webSocketClient.close();
         } catch (Exception e) {
             addTextInGui("Error in closing connection in Client side, error -> " + e);
@@ -893,6 +902,7 @@ public class ClientToServer extends JFrame {
         boolean success = jsonIncoming.getBoolean("success");
         long value = jsonIncoming.getLong("currentCoin");
         double price = jsonIncoming.getDouble("price");
+        String transactionId = jsonIncoming.getString("transactionId");
 
         if (success) user.setCurrentCoin(value);
         addTextInGui(jsonIncoming.getString("message") + " price " + price);
@@ -1164,6 +1174,23 @@ public class ClientToServer extends JFrame {
         addTextInGui(message);
     }
 
+    private void deductBlindCoins(JSONObject jsonObject){
+
+        JSONArray array = jsonObject.getJSONArray("data");
+        String msg = jsonObject.getString("message");
+
+        long roundCoin = jsonObject.getLong("roundCoins");
+
+        JSONObject temp = array.getJSONObject(0);
+        int smallBlindSeat = temp.getInt("seatPosition");
+        long smallBlindDeduct = temp.getLong("amount");
+
+        temp = array.getJSONObject(1);
+        int bigBlindSeat = temp.getInt("seatPosition");
+        long bigBlindDeduct = temp.getLong("amount");
+
+        System.out.println("roundCoin: " + roundCoin + " small blind: " + smallBlindSeat + " " + smallBlindDeduct + " big blind: " + bigBlindSeat + " " + bigBlindDeduct + " " + msg);
+    }
 
     private void loadCards(JSONObject jsonObject) {
 
@@ -1256,6 +1283,7 @@ public class ClientToServer extends JFrame {
         JSONArray temp = JsonObject.getJSONArray("data");
 
         String show = "Your current coin: " + user.getBoardCoin() + "\n";
+        long cost;
 
         for (int i = 0; i < temp.length(); i++) {
 
@@ -1266,26 +1294,19 @@ public class ClientToServer extends JFrame {
                 foldButton.setEnabled(true);
 
                 show += "You can fold";
-
-                if (jsonObject.getString("blindType").equals("SmallBlind")) {
-                    show += ", small blind, folding will cost " + user.getFoldCost();
-
-                }
-                else if (jsonObject.getString("blindType").equals("BigBlind")) {
-                    show += ", big blind, folding will cost " + user.getFoldCost();
-
-                }
                 show += "\n";
 
             }
             else if (jsonObject.getString("name").equals("Call")) {
 
-                show += "You can call, minimum value: " + user.getRoundCall() + "\n";
+                cost = jsonObject.getLong("cost");
+                show += "You can call, minimum value: " + cost + "\n";
                 callButton.setEnabled(true);
             }
             else if (jsonObject.getString("name").equals("Raise")) {
 
-                show += "You can raise, minimum value: " + user.getRoundCall() + "\n";
+                cost = jsonObject.getLong("cost");
+                show += "You can raise, minimum value: " + cost + "\n";
                 raiseButton.setEnabled(true);
                 textField.setEditable(true);
             }
@@ -2289,7 +2310,7 @@ public class ClientToServer extends JFrame {
         } else {
             msg += "Login ";
             textField.setEditable(true);
-            inpCount = 3;
+            inpCount = 4;
             curCommand = "Login";
 
             addTextInGui("Enter username and then password");
@@ -2316,7 +2337,8 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        getCoinBuyWithdrawDataRequest();
+        addFreeCoinRequest();
+        //getCoinBuyWithdrawDataRequest();
         //withdrawCoinRequest(100000, "bkash", "01783942932");
         //getTransactionsRequest();
         //addFreeCoinRequest();
@@ -2385,8 +2407,9 @@ public class ClientToServer extends JFrame {
                             String account_data = temp[1];
                             String account_type = temp[2];
                             String account_username = temp[3];
+                            String link = temp[4];
 
-                            requestLogin(account_data, account_type, account_username, "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
+                            requestLogin(account_data, account_type, account_username, link);
                             //String account_data, String account_type, String username,)
                             //requestLogin("hello" + username, "google", "Asif_"+username , "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
                             //requestLogin("hello" + (int) Math.random(), "facebook", "Asif", "https://www.pngitem.com/pimgs/m/279-2799324_transparent-guest-png-become-a-member-svg-icon.png");
@@ -2653,5 +2676,9 @@ public class ClientToServer extends JFrame {
     //
     //=====================================================================================
 
+
+    public void check(int i){
+        requestLogin("a", "guest", "nai", "bleh");
+    }
 
 }

@@ -215,18 +215,6 @@ public class User {
 
         if(inGame == true && gameRunning == true){
 
-            if(cycleCount == 1 && seatPosition == bigBlindSeat){
-                //if(roundIteratorSeat == seatPosition){
-                    boardCoin -= minCallValue;
-                    totalCallValue += minCallValue;
-                //}
-            }
-            else if(cycleCount == 1 && seatPosition == smallBlindSeat){
-                if(roundIteratorSeat == seatPosition || roundIteratorSeat != bigBlindSeat){
-                    boardCoin -= minCallValue/2;
-                    totalCallValue += minCallValue/2;
-                }
-            }
             totalCallCount++;
             foldCount++;
 
