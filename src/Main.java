@@ -19,7 +19,8 @@ public class Main {
 
             for (int i = 0; i < 3; i++) {
                 ClientToServer c = new ClientToServer(uri, 1112, 60, 1000, 1000);
-                c.check(i);
+                //Thread.sleep(500);
+                //c.check(i);
 
                 //Thread.sleep(50);
                 //System.out.println("done " + i);

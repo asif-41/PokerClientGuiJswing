@@ -531,7 +531,7 @@ public class ClientToServer extends JFrame {
                 deductBlindCoins(jsonIncoming);
             }
         }
-        else if (jsonIncoming.getString("requestType").equals("WaitingRoom")) {
+        else if (jsonIncoming.get("requestType").equals("WaitingRoom")) {
 
             JSONObject tempJson = jsonIncoming.getJSONObject("waitingRoomData");
 
@@ -567,6 +567,14 @@ public class ClientToServer extends JFrame {
 
                 editBoardCoinInWaitingRoomResponse(jsonIncoming);
             }
+        }
+        else if (jsonIncoming.get("requestType").equals("CheckConnection")){
+
+            sendConnectionCheckResponse();
+        }
+        else if (jsonIncoming.get("requestType").equals("ForceLogout")){
+
+            forceLogout(jsonIncoming);
         }
 
     }
@@ -2298,6 +2306,26 @@ public class ClientToServer extends JFrame {
     //      GUI SHITS, IGNORE
     //
     //===========================================================================================
+
+
+
+
+    private void sendConnectionCheckResponse(){
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "CheckConnection");
+        send.put("isConnected", true);
+        sendMessage(send.toString());
+    }
+
+    private void forceLogout(JSONObject jsonObject){
+
+        System.out.println("Force logout if this function is called");
+        System.out.println("Message -> " + jsonObject.getString("message"));
+    }
+
+
+
 
 
     private void logUserClick() {
