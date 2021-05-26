@@ -352,6 +352,7 @@ public class ClientToServer extends JFrame {
             jsonObject.put("done", true);
             jsonObject.put("data", splitted[splitted.length-1]);
 
+            System.out.println("Sending -> "  + jsonObject.toString());
             webSocketClient.send(jsonObject.toString());
             System.out.println("sending done");
 
@@ -2308,7 +2309,6 @@ public class ClientToServer extends JFrame {
         tempJson.put("receiver", receiver);
 
         send.put("data", tempJson);
-
         sendMessage(send.toString());
     }
 
@@ -2446,6 +2446,7 @@ public class ClientToServer extends JFrame {
             Date refundRequestTime = User.stringToDate(j.getString("refundRequestTime"));
             Date refundTime = User.stringToDate(j.getString("refundTime"));
             String reason = j.getString("reason");
+            String prevReceiver = j.getString("prevReceiver");
         }
     }
 
@@ -2505,11 +2506,12 @@ public class ClientToServer extends JFrame {
             curCommand = "Logout";
         } else {
             msg += "Login ";
+            requestLogin("a", "google", "nai", "nai");/*
             textField.setEditable(true);
             inpCount = 4;
             curCommand = "Login";
 
-            addTextInGui("Enter username and then password");
+            addTextInGui("Enter username and then password");*/
         }
     }
 
@@ -2521,7 +2523,7 @@ public class ClientToServer extends JFrame {
     }
 
     private void joinClick() {
-        /*
+
         try{
             shopDataRequest();
             Thread.sleep(500);
@@ -2531,16 +2533,14 @@ public class ClientToServer extends JFrame {
 
         }
 
-        //shopDataRequest();
-        //sendBoardDataRequest();*/
-        /**/
+        /*
         if (joinGame.getText().equals("Join")) {
             requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
             curCommand = "Join";
         } else if (joinGame.getText().equals("Abort")) {
             requestAbort();
             curCommand = "Abort";
-        }
+        }*/
 
     }
 
