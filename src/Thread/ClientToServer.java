@@ -1435,9 +1435,48 @@ public class ClientToServer extends JFrame {
     private void loadWinnerData(JSONObject jsonObject){
 
         JSONObject data = jsonObject.getJSONObject("data");
-        JSONArray winnerData = data.getJSONArray("winnerData");
+        JSONArray eachPlayerData = data.getJSONArray("eachPlayerData");
 
         boolean showCardsAtEnd = data.getBoolean("showCards");
+
+        for(int i=0; i<eachPlayerData.length(); i++){
+
+            JSONObject jsonObject1 = eachPlayerData.getJSONObject(i);
+
+            int seat = jsonObject1.getInt("seat");
+            long winAmount = jsonObject1.getLong("winAmount");
+            boolean hasWon = jsonObject1.getBoolean("hasWon");
+            long coinBack = jsonObject1.getLong("coinBack");
+            String power = jsonObject1.getString("power");
+
+
+            User temp = user.getInGamePlayers()[seat];
+
+            if(temp == null) continue;
+            temp.setRoundsPlayed(temp.getRoundsPlayed() + 1);
+            temp.setBoardCoin(temp.getBoardCoin() + coinBack);
+
+            if(hasWon){
+                temp.setRoundsWon(temp.getRoundsWon() + 1);
+                temp.setWinStreak(temp.getWinStreak() + 1);
+                temp.setCoinWon(temp.getCoinWon() + winAmount);
+                temp.setBiggestWin( max(temp.getBiggestWin() , winAmount) );
+                if(showCardsAtEnd) temp.setBestHand( Card.compareHand(temp.getBestHand(), power) );
+                temp.setBoardCoin(temp.getBoardCoin() + winAmount);
+            }
+            else{
+                temp.setWinStreak(0);
+                temp.setCoinLost(temp.getCoinLost() + temp.getTotalCallValue());
+            }
+        }
+        User.loadOwnSelfFromInGamePlayers(user);
+
+
+
+
+
+
+        /*
         long winAmount = data.getLong("winAmount");
 
         int kk = 0;
@@ -1474,11 +1513,47 @@ public class ClientToServer extends JFrame {
                 temp.setCoinLost(temp.getCoinLost() + temp.getTotalCallValue());
             }
         }
-        User.loadOwnSelfFromInGamePlayers(user);
+        User.loadOwnSelfFromInGamePlayers(user);*/
     }
 
     private void processResult(JSONObject jsonObject) {
 
+
+        System.out.println("Winner result -> " + jsonObject);
+
+        loadWinnerData(jsonObject);
+
+        JSONObject data = jsonObject.getJSONObject("data");
+        JSONArray eachPlayerData = data.getJSONArray("eachPlayerData");
+
+        boolean showCardsAtEnd = data.getBoolean("showCards");
+
+        for(int i=0; i<eachPlayerData.length(); i++){
+
+            JSONObject jsonObject1 = eachPlayerData.getJSONObject(i);
+
+            int seat = jsonObject1.getInt("seat");
+            long winAmount = jsonObject1.getLong("winAmount");
+            boolean hasWon = jsonObject1.getBoolean("hasWon");
+            long coinBack = jsonObject1.getLong("coinBack");
+            String power = jsonObject1.getString("power");
+
+            if( ! hasWon ) continue;
+
+            JSONArray winningData = jsonObject1.getJSONArray("winLevel");
+            for(int j=0; j<winningData.length(); j++){
+
+                JSONObject jsonObject2 = winningData.getJSONObject(j);
+
+                long amount = jsonObject2.getLong("amount");
+                int level = jsonObject2.getInt("level");
+                int resultFoundAtLevel = jsonObject2.getInt("resultFoundAtLevel");
+
+                if(showCardsAtEnd) System.out.println( Card.suitMessage(power, resultFoundAtLevel) );
+            }
+        }
+
+        /*
         loadWinnerData(jsonObject);
 
         JSONObject data = jsonObject.getJSONObject("data");
@@ -1517,7 +1592,7 @@ public class ClientToServer extends JFrame {
         }
         if (winnerCount > 1) show += "\nTied between " + winnerCount + " players";
 
-        addTextInGui(show);
+        addTextInGui(show);*/
     }
 
     //======================================================================================
@@ -2506,8 +2581,8 @@ public class ClientToServer extends JFrame {
             curCommand = "Logout";
         } else {
             msg += "Login ";
-            requestLogin("a", "google", "nai", "nai");/*
-            textField.setEditable(true);
+            requestLogin("a", "guest", "nai", "nai");
+            /*textField.setEditable(true);
             inpCount = 4;
             curCommand = "Login";
 
@@ -2533,14 +2608,14 @@ public class ClientToServer extends JFrame {
 
         }
 
-        /*
+
         if (joinGame.getText().equals("Join")) {
             requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
             curCommand = "Join";
         } else if (joinGame.getText().equals("Abort")) {
             requestAbort();
             curCommand = "Abort";
-        }*/
+        }
 
     }
 
@@ -2568,10 +2643,11 @@ public class ClientToServer extends JFrame {
 
     private void friendsButtonClicked() {
 
-        getAllTransactionsRequest();
+        getNotifications();
+        //getAllTransactionsRequest();
 
-        curCommand = "Friends";
-        requestFriendsList();
+        //curCommand = "Friends";
+        //requestFriendsList();
     }
 
     private void closeButtonClicked() {
@@ -2900,6 +2976,13 @@ public class ClientToServer extends JFrame {
 
     public void check(int i){
         requestLogin("a", "guest", "nai", "bleh");
+
+        try{
+            Thread.sleep(500);
+        }catch (Exception e){
+
+        }
+        requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
     }
 
 }
