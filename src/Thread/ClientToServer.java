@@ -336,10 +336,11 @@ public class ClientToServer extends JFrame {
     }
 
     private void sendMessage(String temp) {
+
         try {
             System.out.println("sending length -> " + temp.toString().getBytes("UTF-8").length);
 
-            String[] splitted = FluentIterable.from(Splitter.fixedLength(8000).split(temp)).toArray(String.class);
+            String[] splitted = FluentIterable.from(Splitter.fixedLength(4000).split(temp)).toArray(String.class);
 
             for(int i=0; i<splitted.length-1; i++){
                 JSONObject jsonObject = new JSONObject();
@@ -580,6 +581,10 @@ public class ClientToServer extends JFrame {
         else if (jsonIncoming.get("requestType").equals("ShowNotifications")){
 
             showNotifications(jsonIncoming);
+        }
+        else if (jsonIncoming.get("requestType").equals("TokenRequestResponse")){
+
+            showToken(jsonIncoming);
         }
 
     }
@@ -1184,6 +1189,7 @@ public class ClientToServer extends JFrame {
             else if (jsonObject.getString("name").equals("Raise")) {
 
                 cost = jsonObject.getLong("cost");
+
                 show += "You can raise, minimum value: " + cost + "\n";
                 raiseButton.setEnabled(true);
                 textField.setEditable(true);
@@ -2563,6 +2569,26 @@ public class ClientToServer extends JFrame {
 
 
 
+    private void requestToken(){
+
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "TokenRequest");
+
+        sendMessage(send.toString());
+    }
+
+    private void showToken(JSONObject jsonObject){
+
+        String token = jsonObject.getString("token");
+        String link = "http://66.42.55.46:1112/request?id=" + user.getId() + "&token=" + token ;
+
+        addTextInGui("Token: " + token + "\nlink: " + link + "\n\n");
+    }
+
+
 
 
     //===========================================================================================
@@ -2591,8 +2617,10 @@ public class ClientToServer extends JFrame {
     }
 
     private void infoUserClick() {
-        curCommand = "UserInfo";
-        addTextInGui(User.UserToJsonInGame(user).toString());
+        //curCommand = "UserInfo";
+        //addTextInGui(User.UserToJsonInGame(user).toString());
+
+        requestToken();
 
         //removeFromWaitingRoom(new int[]{1,2});
     }
@@ -2603,6 +2631,7 @@ public class ClientToServer extends JFrame {
             shopDataRequest();
             Thread.sleep(500);
             coinBuyRequest(100000, "bkash", "haha", "01783942932", transactionNumbers.get(0).getJSON().toString());
+            Thread.sleep(500);
 
         }catch (Exception e){
 
@@ -2643,7 +2672,20 @@ public class ClientToServer extends JFrame {
 
     private void friendsButtonClicked() {
 
-        getNotifications();
+        JSONObject send = initiateJson();
+
+        send.put("id", user.getId());
+        send.put("username", user.getUsername());
+        send.put("requestType", "Haha");
+
+        String hehe = "";
+        for(int i=0; i<9000; i++) hehe += "1";
+
+        send.put("hehe", hehe);
+
+        sendMessage(send.toString());
+
+        //getNotifications();
         //getAllTransactionsRequest();
 
         //curCommand = "Friends";
@@ -2982,7 +3024,7 @@ public class ClientToServer extends JFrame {
         }catch (Exception e){
 
         }
-        requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
+        //requestJoin(-1, -1, boardType[0], minEntryValue[0], minCallValue[0], -1, -1, 100000);
     }
 
 }

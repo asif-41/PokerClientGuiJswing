@@ -17,7 +17,7 @@ public class Main {
         try {
             URI uri = new URI(link);
 
-            for (int i = 0; i < 4; i++) {
+            for (int i = 0; i < 1; i++) {
                 ClientToServer c = new ClientToServer(uri, 1112, 60, 1000, 1000);
                 Thread.sleep(500);
                 c.check(i);
