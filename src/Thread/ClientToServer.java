@@ -379,6 +379,7 @@ public class ClientToServer extends JFrame {
 
         if (jsonIncoming.get("requestType").equals("LoginResponse")) {
 
+            boolean buttons = jsonIncoming.getBoolean("transactionButtons");
             loginRequestResponse(jsonIncoming.getBoolean("response"), jsonIncoming.getJSONObject("data"));
         }
         else if (jsonIncoming.get("requestType").equals("LogoutResponse")) {
