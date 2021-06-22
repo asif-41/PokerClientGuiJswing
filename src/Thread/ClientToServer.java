@@ -587,6 +587,14 @@ public class ClientToServer extends JFrame {
 
             showToken(jsonIncoming);
         }
+        else if (jsonIncoming.get("requestType").equals("Version")){
+
+            versionResponse(jsonIncoming);
+        }
+        else if (jsonIncoming.get("requestType").equals("CurrentImage")){
+
+            currentImageResponse(jsonIncoming);
+        }
 
     }
 
@@ -608,6 +616,46 @@ public class ClientToServer extends JFrame {
     //          (FB_ID, "facebook"), (GMAIL_ID, "google") ( empty, "guest")
     //
     //=============================================================================
+
+    private void getCurrentImage(){
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "CurrentImage");
+        sendMessage(send.toString());
+    }
+
+    private void requestImageChange(String link){
+
+        user.setImageLink(link);
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "ChangeImage");
+        send.put("imageLink", link);
+        sendMessage(send.toString());
+    }
+
+    private void currentImageResponse(JSONObject jsonObject){
+
+        String link = jsonObject.getString("imageLink");
+        addTextInGui(link);
+
+    }
+
+    private void requestVersion(){
+
+        JSONObject send = initiateJson();
+        send.put("requestType", "Version");
+        sendMessage(send.toString());
+    }
+
+    private void versionResponse(JSONObject jsonObject){
+
+        int version = jsonObject.getInt("version");
+        System.out.println("Version : " + version);
+    }
+
+
+
 
     private void requestLogin(String account_data, String account_type, String username, String imageLink) {
 
@@ -644,6 +692,7 @@ public class ClientToServer extends JFrame {
             initializeAppData(data.getJSONObject("appData"));
             loadUser(data);
             addTextInGui("Welcome " + user.getUsername());
+            addTextInGui(user.getImageLink());
         } else {
             addTextInGui("Login failed! No More guests allowed");
         }
@@ -2651,14 +2700,19 @@ public class ClientToServer extends JFrame {
 
     private void inviteButtonClick() {
 
-        try{
-            shopDataRequest();
-            Thread.sleep(500);
-            withdrawCoinRequest(100000, "bkash", "01783942932");
+        requestImageChange("http://localhost:1112/image?id=5");
+        getCurrentImage();
 
-        }catch (Exception e){
+        //requestVersion();
 
-        }
+//        try{
+//            shopDataRequest();
+//            Thread.sleep(500);
+//            withdrawCoinRequest(100000, "bkash", "01783942932");
+//
+//        }catch (Exception e){
+//
+//        }
         //addFreeCoinRequest();
         //getCoinBuyWithdrawDataRequest();
         //withdrawCoinRequest(100000, "bkash", "01783942932");
@@ -3018,7 +3072,7 @@ public class ClientToServer extends JFrame {
 
 
     public void check(int i){
-        requestLogin("a", "guest", "nai", "bleh");
+        requestLogin("abc", "facebook", "asifaaa", "http://locaalhost:1112/image?id=5");
 
         try{
             Thread.sleep(500);
