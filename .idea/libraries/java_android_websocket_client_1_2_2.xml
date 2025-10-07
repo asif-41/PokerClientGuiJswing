@@ -1,9 +1,0 @@
-<component name="libraryTable">
-  <library name="java-android-websocket-client-1.2.2">
-    <CLASSES>
-      <root url="jar://$PROJECT_DIR$/JarDependency/java-android-websocket-client-1.2.2.jar!/" />
-    </CLASSES>
-    <JAVADOC />
-    <SOURCES />
-  </library>
-</component>
